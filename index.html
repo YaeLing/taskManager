@@ -97,11 +97,101 @@ header::after {
 /* ═══ MAIN LAYOUT ═══ */
 .layout {
   flex: 1; display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 300px 1fr 280px;
   grid-template-rows: 1fr auto;
   min-height: 0;
   gap: 0;
 }
+
+/* ═══ CHAT PANEL (RIGHT) ═══ */
+.chat-panel {
+  grid-row: 1 / 3;
+  display: flex; flex-direction: column;
+  border-left: 1px solid var(--border2);
+  background: var(--panel);
+  min-height: 0;
+}
+.chat-head {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+.chat-head-title {
+  display: flex; align-items: center; gap: 8px;
+}
+.chat-head-title h2 {
+  font-size: .88rem; font-weight: 700; color: var(--text); margin: 0;
+}
+.chat-head-title svg { opacity: .7; }
+.chat-badge {
+  font-size: .65rem; font-weight: 600;
+  padding: 2px 7px; border-radius: 999px;
+  background: var(--acc); color: #fff;
+}
+.chat-sub {
+  font-size: .7rem; color: var(--dim); margin-top: 4px;
+}
+.chat-list {
+  flex: 1; overflow-y: auto; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.chat-msg {
+  display: flex; gap: 8px; align-items: flex-start;
+}
+.chat-msg-av {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--acc), var(--q4));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0; overflow: hidden;
+}
+.chat-msg-av img { width: 100%; height: 100%; object-fit: cover; }
+.chat-msg-body {
+  flex: 1; min-width: 0;
+}
+.chat-msg-meta {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 2px;
+}
+.chat-msg-name {
+  font-size: .72rem; font-weight: 600; color: var(--text);
+}
+.chat-msg-time {
+  font-size: .62rem; color: var(--dim);
+}
+.chat-msg-text {
+  font-size: .75rem; color: var(--text); line-height: 1.5;
+  background: var(--s2); padding: 6px 10px; border-radius: 8px;
+  word-break: break-word;
+}
+.chat-msg.mine .chat-msg-text {
+  background: rgba(90,148,144,.12);
+}
+.chat-empty {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  color: var(--dim); font-size: .75rem; text-align: center; padding: 20px;
+}
+.chat-input-wrap {
+  padding: 10px 12px; border-top: 1px solid var(--border2);
+  display: flex; gap: 8px; align-items: flex-end;
+  background: var(--panel);
+}
+.chat-input-wrap textarea {
+  flex: 1; resize: none; border: 1px solid var(--border2);
+  border-radius: 8px; padding: 8px 10px; font-size: .75rem;
+  font-family: inherit; background: var(--bg); color: var(--text);
+  min-height: 36px; max-height: 80px;
+}
+.chat-input-wrap textarea:focus {
+  outline: none; border-color: var(--acc);
+}
+.chat-send-btn {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--acc); border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; flex-shrink: 0;
+  transition: opacity .15s;
+}
+.chat-send-btn:hover { opacity: .85; }
+.chat-send-btn:active { transform: scale(.95); }
 
 /* ═══ LEFT: SUGGESTED PANEL ═══ */
 .sug-panel {
@@ -330,6 +420,12 @@ header::after {
 .done-del { font-size:.62rem; color:transparent; cursor:pointer; padding:1px 6px; border:none; border-radius:999px; background:transparent; font-family:inherit; margin-left:auto; transition:color .15s; }
 .done-card:hover .done-del { color:var(--dim); }
 .done-del:hover { color:var(--q1) !important; }
+.done-date { font-size:.58rem; color:var(--dim); opacity:.6; margin-left:auto; flex-shrink:0; font-family:var(--mono); }
+.done-group-label {
+  flex-shrink:0; font-size:.68rem; font-weight:600; color:var(--done);
+  padding:4px 10px; background:rgba(74,85,104,.08); border-radius:6px;
+  display:flex; align-items:center; white-space:nowrap;
+}
 
 /* ═══ COMMENT DRAWER ═══ */
 .drawer-overlay { position:fixed; inset:0; z-index:200; background:rgba(40,30,20,.35); backdrop-filter:blur(4px); display:none; }
@@ -430,25 +526,45 @@ header::after {
 .drawer-desc-block{background:var(--s2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;font-size:.82rem;color:var(--dim);line-height:1.6;white-space:pre-wrap;word-break:break-word;}
 .drawer-desc-lbl{font-size:.66rem;color:var(--dim);text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px;opacity:.7;}
 
-/* ═══ TOAST NOTIFICATION ═══ */
-.toast{position:fixed;bottom:24px;right:24px;z-index:2000;background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:12px 16px;min-width:260px;max-width:340px;box-shadow:0 8px 32px rgba(40,30,20,.25);animation:toastIn .25s ease;display:flex;gap:11px;align-items:flex-start;}
-.toast.out{animation:toastOut .3s ease forwards;}
-@keyframes toastIn{from{opacity:0;transform:translateY(16px) scale(.96)}to{opacity:1;transform:none}}
-@keyframes toastOut{to{opacity:0;transform:translateY(10px) scale(.97)}}
-.toast-icon{font-size:18px;flex-shrink:0;line-height:1.3;}
-.toast-body{flex:1;min-width:0;}
-.toast-title{font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.toast-msg{font-size:.73rem;color:var(--dim);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
-.toast-border{position:absolute;bottom:0;left:12px;right:12px;height:2px;border-radius:999px;background:linear-gradient(90deg,var(--acc),var(--q4));opacity:.6;}
+/* ═══ NOTIFICATION CENTER (Teams style) ═══ */
+.notif-container{position:fixed;bottom:20px;right:20px;z-index:2000;display:flex;flex-direction:column-reverse;gap:10px;max-height:calc(100vh - 100px);overflow:hidden;pointer-events:none;}
+.notif-card{pointer-events:auto;background:var(--panel);border:1px solid var(--border2);border-radius:12px;padding:12px 14px;width:320px;max-width:calc(100vw - 40px);box-shadow:0 8px 32px rgba(40,30,20,.25),0 2px 8px rgba(40,30,20,.1);animation:notifIn .3s cubic-bezier(.34,1.56,.64,1);display:flex;gap:10px;align-items:flex-start;cursor:pointer;transition:transform .15s,box-shadow .15s;position:relative;overflow:hidden;}
+.notif-card:hover{transform:translateX(-4px);box-shadow:0 12px 40px rgba(40,30,20,.3);}
+.notif-card.out{animation:notifOut .25s ease forwards;}
+@keyframes notifIn{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+@keyframes notifOut{to{opacity:0;transform:translateX(100%)}}
+.notif-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--acc),var(--q4));display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden;}
+.notif-avatar img{width:100%;height:100%;object-fit:cover;}
+.notif-body{flex:1;min-width:0;}
+.notif-header{display:flex;align-items:center;gap:6px;margin-bottom:3px;}
+.notif-name{font-size:.75rem;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.notif-action{font-size:.68rem;color:var(--acc);font-weight:500;}
+.notif-time{font-size:.62rem;color:var(--dim);margin-left:auto;flex-shrink:0;}
+.notif-text{font-size:.73rem;color:var(--dim);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.notif-close{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:transparent;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--dim);opacity:0;transition:opacity .15s,background .15s;}
+.notif-card:hover .notif-close{opacity:1;}
+.notif-close:hover{background:rgba(0,0,0,.08);color:var(--text);}
+.notif-accent{position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;}
+.notif-card[data-type="chat"] .notif-accent{background:var(--acc);}
+.notif-card[data-type="task"] .notif-accent{background:var(--q3);}
+.notif-card[data-type="done"] .notif-accent{background:var(--done);}
+.notif-card[data-type="comment"] .notif-accent{background:var(--q2);}
 
 /* ═══ MOBILE TAB BAR ═══ */
 .mob-tabs { display:none; }
 
 /* ═══ TABLET (640–899px) ═══ */
 @media (max-width: 899px) and (min-width: 640px) {
-  .layout { grid-template-columns: 220px 1fr; }
+  .layout { grid-template-columns: 200px 1fr 220px; }
   .sug-head-title h2 { font-size: .82rem; }
   .sug-sub { font-size: .68rem; }
+  .chat-head-title h2 { font-size: .82rem; }
+  .chat-sub { font-size: .65rem; }
+}
+
+/* ═══ WIDE TABLET (900–1100px) ═══ */
+@media (max-width: 1100px) and (min-width: 900px) {
+  .layout { grid-template-columns: 260px 1fr 240px; }
 }
 
 /* ═══ MOBILE (< 640px) ═══ */
@@ -500,6 +616,13 @@ header::after {
   .completed-section.collapsed { max-height:44px; }
   .done-tasks { flex-direction:column; overflow-x:hidden; overflow-y:auto; max-height:70svh; }
   .done-card { width:auto; }
+  .done-group-label { width:100%; margin-top:8px; }
+  .done-group-label:first-child { margin-top:0; }
+
+  /* Chat panel */
+  .chat-panel { display:none; border-left:none; border-top:1px solid var(--border2); }
+  .chat-panel.mob-show { display:flex; }
+  .chat-list { max-height:60svh; }
 
   /* Drawer full-screen */
   .drawer { width:100%; max-width:100%; }
@@ -546,6 +669,14 @@ header::after {
 .handler-av{width:13px;height:13px;border-radius:50%;background:rgba(90,148,144,.15);display:inline-flex;align-items:center;justify-content:center;font-size:7px;overflow:hidden;flex-shrink:0;line-height:1;}
 .handler-av svg{width:11px;height:11px;}
 .task-card.handling{border-left:3px solid rgba(90,148,144,.5);background:rgba(90,148,144,.04);}
+/* 多人頭像堆疊 */
+.handlers-stack{display:inline-flex;align-items:center;}
+.handlers-stack .handler-av{margin-left:-5px;border:1.5px solid var(--panel);box-sizing:content-box;}
+.handlers-stack .handler-av:first-child{margin-left:0;}
+.handlers-more{font-size:.55rem;color:var(--acc);margin-left:2px;}
+.sug-handlers-stack{display:flex;flex-direction:row-reverse;}
+.sug-handlers-stack .sug-handler-avatar{margin-left:-10px;border:2px solid var(--panel);box-sizing:content-box;}
+.sug-handlers-stack .sug-handler-avatar:last-child{margin-left:0;}
 .task-actions .hb{color:var(--dim);}
 .task-actions .hb:hover{background:rgba(90,148,144,.15) !important;color:var(--acc) !important;}
 .task-actions .hb.on{color:var(--acc) !important;opacity:1 !important;}
@@ -610,6 +741,9 @@ header::after {
   </div>
   <div class="mob-tab" data-panel="done" onclick="setMobTab('done')">
     <span class="mt-icon">✓</span><span class="mt-lbl">已完成</span>
+  </div>
+  <div class="mob-tab" data-panel="chat" onclick="setMobTab('chat')">
+    <span class="mt-icon">💬</span><span class="mt-lbl">留言板</span>
   </div>
 </nav>
 
@@ -700,6 +834,31 @@ header::after {
       </div>
     </div>
   </div><!-- /right-area -->
+
+  <!-- RIGHT: Chat Panel -->
+  <aside class="chat-panel" id="chat-panel">
+    <div class="chat-head">
+      <div class="chat-head-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <h2>團隊留言板</h2>
+        <span class="chat-badge" id="chat-count">0</span>
+      </div>
+      <div class="chat-sub">即時討論與公告</div>
+    </div>
+    <div class="chat-list" id="chat-list">
+      <div class="chat-empty">還沒有留言<br><span style="font-size:.65rem;opacity:.7">發送第一則訊息開始討論</span></div>
+    </div>
+    <div class="chat-input-wrap">
+      <textarea id="chat-input" placeholder="輸入訊息… (Enter 送出)" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}"></textarea>
+      <button class="chat-send-btn" onclick="sendChatMsg()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
 </div><!-- /layout -->
 
 <!-- Comment Drawer -->
@@ -835,8 +994,8 @@ let customAvUrl = null;   // URL for custom uploaded avatar
 
 async function initProfile(){
   profile = JSON.parse(localStorage.getItem('user_profile')||'null');
-  // Load tasks from server first
-  await loadTasks();
+  // Load tasks and chat from server
+  await Promise.all([loadTasks(), loadChat()]);
   if(!profile){
     showSetup(false);
   } else {
@@ -1067,21 +1226,97 @@ function toggleHandler(id,e){
   if(e)e.stopPropagation();
   if(!profile){showSetup(false);return;}
   const t=tasks.find(t=>t.id===id); if(!t)return;
-  if(t.handler&&t.handler.name===profile.name){
-    logHistory('取消接手', t, `取消處理中`);
-    t.handler=null;
+  // 相容舊資料：將 handler 轉換為 handlers 陣列
+  if(t.handler && !t.handlers){
+    t.handlers = [t.handler];
+    delete t.handler;
+  }
+  if(!t.handlers) t.handlers = [];
+  const idx = t.handlers.findIndex(h=>h.name===profile.name);
+  if(idx >= 0){
+    logHistory('取消接手', t, `${profile.name} 取消處理中`);
+    t.handlers.splice(idx, 1);
   } else {
-    t.handler={name:profile.name,avatar:profile.avatar,avatar_type:profile.avatar_type||'emoji'};
+    t.handlers.push({name:profile.name,avatar:profile.avatar,avatar_type:profile.avatar_type||'emoji'});
     logHistory('接手處理', t, `${profile.name} 標記處理中`);
   }
   save();render();
 }
 
 let tasks = [];
+let chatMessages = [];
 let selQ=1, editId=null, dragId=null, openTaskId=null, doneOpen=true, myIP='—';
 let _saving = false;
 
 fetch('/api/ip').then(r=>r.json()).then(d=>{myIP=d.ip;}).catch(()=>{});
+
+/* ─── CHAT BOARD ─── */
+async function loadChat(){
+  try {
+    const res = await fetch('/api/chat');
+    if(res.ok){
+      chatMessages = await res.json();
+      renderChat();
+    }
+  } catch(e){ console.error('Failed to load chat:', e); }
+}
+
+function renderChat(){
+  const el = document.getElementById('chat-list');
+  const countEl = document.getElementById('chat-count');
+  if(countEl) countEl.textContent = chatMessages.length;
+
+  if(!chatMessages.length){
+    el.innerHTML = '<div class="chat-empty">還沒有留言<br><span style="font-size:.65rem;opacity:.7">發送第一則訊息開始討論</span></div>';
+    return;
+  }
+
+  el.innerHTML = chatMessages.map(m => {
+    const isMine = profile && m.name === profile.name;
+    return `<div class="chat-msg${isMine?' mine':''}">
+      <div class="chat-msg-av">${m.avatar ? avHTML(m.avatar, 28, m.avatar_type) : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>'}</div>
+      <div class="chat-msg-body">
+        <div class="chat-msg-meta">
+          <span class="chat-msg-name">${esc(m.name || m.ip)}</span>
+          <span class="chat-msg-time">${esc(m.time)}</span>
+        </div>
+        <div class="chat-msg-text">${esc(m.text)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendChatMsg(){
+  const inp = document.getElementById('chat-input');
+  const text = inp.value.trim();
+  if(!text) return;
+  if(!profile){ showSetup(false); return; }
+
+  const msg = {
+    id: Date.now(),
+    text,
+    ip: myIP,
+    time: ts(),
+    name: profile.name,
+    avatar: profile.avatar,
+    avatar_type: profile.avatar_type || 'emoji'
+  };
+
+  chatMessages.push(msg);
+  renderChat();
+  inp.value = '';
+  inp.focus();
+
+  try {
+    await fetch('/api/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg})
+    });
+  } catch(e){ console.error('Failed to send chat:', e); }
+}
 
 // Load tasks from server
 async function loadTasks(){
@@ -1161,8 +1396,10 @@ function render(){
     el.innerHTML=list.map((t,i)=>{
       const cc=(t.comments||[]).length;
       const ov=isOverdue(t.due);
-      const isHandling=!!(t.handler);
-      const isMine=isHandling&&profile&&t.handler.name===profile.name;
+      const handlers = t.handlers || (t.handler ? [t.handler] : []);
+      const isHandling = handlers.length > 0;
+      const isMine = profile && handlers.some(h=>h.name===profile.name);
+      const handlersHTML = isHandling ? `<span class="handler-tag"><span class="handlers-stack">${handlers.slice(0,3).map(h=>`<span class="handler-av">${avHTML(h.avatar,13,h.avatar_type)}</span>`).join('')}</span>${handlers.length>3?`<span class="handlers-more">+${handlers.length-3}</span>`:''}${handlers.length===1?esc(handlers[0].name):handlers.length+'人'} 處理中</span>` : '';
       return `<div class="task-card${ov?' overdue':''}${isHandling?' handling':''}" draggable="true"
         ondragstart="onDragStart(event,${t.id})" ondragend="onDragEnd(event)"
         style="--c:${COLORS[q]}">
@@ -1175,7 +1412,7 @@ function render(){
           ${t.desc?`<div class="task-desc">${esc(t.desc)}</div>`:''}
           <div class="task-footer">
             ${dueBadge(t.due)}
-            ${isHandling?`<span class="handler-tag"><span class="handler-av">${avHTML(t.handler.avatar,13,t.handler.avatar_type)}</span>${esc(t.handler.name)} 處理中</span>`:''}
+            ${handlersHTML}
             <span class="comment-count ${cc?'has':''}" onclick="openDrawer(${t.id})" style="--c:${COLORS[q]}">
               <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
               ${cc}
@@ -1183,7 +1420,7 @@ function render(){
           </div>
         </div>
         <div class="task-actions">
-          <button class="hb${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'標記我來處理'}">
+          <button class="hb${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'加入處理'}">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
           <button class="eb" onclick="openModal(${t.id})" title="編輯">
@@ -1211,7 +1448,11 @@ function render(){
     sl.innerHTML='<div class="sug-empty">🎉 目前沒有待辦任務<br><span style="font-size:.65rem;opacity:.7">新增任務開始排程</span></div>';
   } else {
     sl.innerHTML=sorted.map((t,i)=>{
-      const isMine=!!(t.handler&&profile&&t.handler.name===profile.name);
+      const handlers = t.handlers || (t.handler ? [t.handler] : []);
+      const isMine = profile && handlers.some(h=>h.name===profile.name);
+      const handlersAvatars = handlers.length > 0
+        ? `<div class="sug-handlers-stack" title="${handlers.map(h=>esc(h.name)).join(', ')} 處理中">${handlers.slice(0,3).map(h=>`<div class="sug-handler-avatar">${avHTML(h.avatar,32,h.avatar_type)}</div>`).join('')}</div>${handlers.length>3?`<span class="handlers-more" style="margin-left:4px">+${handlers.length-3}</span>`:''}`
+        : `<div class="sug-handler-empty" title="尚未認領"></div>`;
       return `<div class="sug-item" onclick="openDrawer(${t.id})" style="--ic:${COLORS[t.q]}">
         <span class="sug-rank">${i+1}</span>
         <div class="sug-body">
@@ -1222,26 +1463,61 @@ function render(){
           </div>
         </div>
         <div class="sug-right">
-          ${t.handler?`<div class="sug-handler-avatar" title="${esc(t.handler.name)} 處理中">${avHTML(t.handler.avatar,32,t.handler.avatar_type)}</div>`:`<div class="sug-handler-empty" title="尚未認領"></div>`}
-          <button class="sug-handle-btn${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'標記我來處理'}">${isMine?'處理中':'接手'}</button>
+          ${handlersAvatars}
+          <button class="sug-handle-btn${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'加入處理'}">${isMine?'處理中':'接手'}</button>
         </div>
       </div>`;
     }).join('');
   }
 
-  // Completed
+  // Completed - 按時間分組
   document.getElementById('done-badge').textContent=done.length;
   const dl=document.getElementById('done-list');
   if(!done.length){
     dl.innerHTML='<div style="display:flex;align-items:center;color:var(--dim);font-size:.72rem;opacity:.4;padding:0 4px">尚無完成任務</div>';
   } else {
-    dl.innerHTML=done.map((t,i)=>{
+    // 計算本週和上週的起始日期
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayOfWeek = today.getDay() || 7; // 週日為 7
+    const thisWeekStart = new Date(today);
+    thisWeekStart.setDate(today.getDate() - dayOfWeek + 1); // 本週一
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(thisWeekStart.getDate() - 7); // 上週一
+
+    // 分組並排序
+    const thisWeek = [], lastWeek = [], older = [];
+    done.forEach(t => {
+      const doneDate = t.doneAt ? new Date(t.doneAt) : new Date(t.id); // 沒有 doneAt 就用 id 當時間
+      if(doneDate >= thisWeekStart) thisWeek.push(t);
+      else if(doneDate >= lastWeekStart) lastWeek.push(t);
+      else older.push(t);
+    });
+
+    // 每組內按完成時間排序（新的在前）
+    const sortByDone = (a, b) => {
+      const aTime = a.doneAt ? new Date(a.doneAt).getTime() : a.id;
+      const bTime = b.doneAt ? new Date(b.doneAt).getTime() : b.id;
+      return bTime - aTime;
+    };
+    thisWeek.sort(sortByDone);
+    lastWeek.sort(sortByDone);
+    older.sort(sortByDone);
+
+    const renderDoneCard = (t, i) => {
       const cc=(t.comments||[]).length;
+      const handlers = t.handlers || (t.handler ? [t.handler] : []);
+      const handlersHTML = handlers.length > 0
+        ? `<span class="handlers-stack" style="margin-left:4px" title="${handlers.map(h=>esc(h.name)).join(', ')}">${handlers.slice(0,3).map(h=>`<span class="handler-av">${avHTML(h.avatar,13,h.avatar_type)}</span>`).join('')}${handlers.length>3?`<span class="handlers-more">+${handlers.length-3}</span>`:''}</span>`
+        : '';
+      const doneDate = t.doneAt ? t.doneAt.slice(0,10) : '';
       return `<div class="done-card">
         <div class="done-card-top">
           <span class="done-num">${i+1}.</span>
           <div class="done-qdot" style="background:${COLORS[t.q]}"></div>
           <span class="done-text">${esc(t.text)}</span>
+          ${handlersHTML}
+          ${doneDate ? `<span class="done-date">${doneDate}</span>` : ''}
         </div>
         <div class="done-card-bot">
           <button class="done-btn" onclick="toggleDone(${t.id},event)">↩ 恢復</button>
@@ -1249,7 +1525,23 @@ function render(){
           <button class="done-del" onclick="delTask(${t.id},event)">✕</button>
         </div>
       </div>`;
-    }).join('');
+    };
+
+    let html = '';
+    let idx = 0;
+    if(thisWeek.length){
+      html += `<div class="done-group-label">本週完成 (${thisWeek.length})</div>`;
+      html += thisWeek.map(t => renderDoneCard(t, ++idx)).join('');
+    }
+    if(lastWeek.length){
+      html += `<div class="done-group-label">上週完成 (${lastWeek.length})</div>`;
+      html += lastWeek.map(t => renderDoneCard(t, ++idx)).join('');
+    }
+    if(older.length){
+      html += `<div class="done-group-label">更早之前 (${older.length})</div>`;
+      html += older.map(t => renderDoneCard(t, ++idx)).join('');
+    }
+    dl.innerHTML = html;
   }
 
   if(openTaskId!==null) renderDrawer(openTaskId);
@@ -1259,7 +1551,13 @@ function render(){
 function toggleDone(id,e){
   if(e)e.stopPropagation();
   const t=tasks.find(t=>t.id===id); if(!t) return;
-  t.done=!t.done; save(); render();
+  t.done=!t.done;
+  if(t.done){
+    t.doneAt = new Date().toISOString();
+  } else {
+    delete t.doneAt;
+  }
+  save(); render();
   logHistory(t.done?'標記完成':'恢復任務', t, t.done?'移至已完成':'從已完成恢復');
 }
 function delTask(id,e){
@@ -1331,7 +1629,12 @@ function openDrawer(id){
   const dd=document.getElementById('ddesc');
   if(t.desc){ dd.innerHTML=`<div class="drawer-desc-lbl">說明</div><div class="drawer-desc-block">${esc(t.desc)}</div>`; dd.style.display='block'; }
   else { dd.style.display='none'; }
-  document.getElementById('dmeta').innerHTML=t.due?dueBadge(t.due):'';
+  // 顯示截止日期和 handlers
+  const handlers = t.handlers || (t.handler ? [t.handler] : []);
+  const handlersHTML = handlers.length > 0
+    ? `<span class="handler-tag" style="margin-left:6px"><span class="handlers-stack">${handlers.slice(0,5).map(h=>`<span class="handler-av">${avHTML(h.avatar,13,h.avatar_type)}</span>`).join('')}</span>${handlers.length>5?`<span class="handlers-more">+${handlers.length-5}</span>`:''}${handlers.map(h=>esc(h.name)).join('、')} 處理中</span>`
+    : '';
+  document.getElementById('dmeta').innerHTML=(t.due?dueBadge(t.due):'')+handlersHTML;
   renderDrawer(id);
   document.getElementById('dov').classList.add('open');
   setTimeout(()=>document.getElementById('cinp').focus(),200);
@@ -1424,6 +1727,8 @@ function logHistory(action, task, detail=''){
   const entry = {
     time: ts(),
     user: profile?.name || '未知使用者',
+    avatar: profile?.avatar || null,
+    avatar_type: profile?.avatar_type || 'emoji',
     ip: myIP,
     action,
     task_id: task?.id || null,
@@ -1442,22 +1747,99 @@ document.getElementById('done-header').onclick = function(){
   document.getElementById('done-section').classList.toggle('collapsed',!doneOpen);
 };
 
-/* ─── NOTIFICATIONS ─── */
-let _toastTimer=null;
-function showToast(icon, title, msg){
-  const old=document.getElementById('toast-el');
-  if(old){ old.classList.add('out'); setTimeout(()=>old.remove(),300); }
-  const d=document.createElement('div');
-  d.id='toast-el'; d.className='toast';
-  d.innerHTML=`<div class="toast-icon">${icon}</div>
-    <div class="toast-body">
-      <div class="toast-title">${esc(title)}</div>
-      <div class="toast-msg">${esc(msg)}</div>
+/* ─── NOTIFICATIONS (Teams style) ─── */
+let _notifSound = null;
+function playNotifSound(){
+  if(!_notifSound){
+    // 簡單的提示音 (使用 Web Audio API)
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 800;
+      osc.type = 'sine';
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.15);
+    } catch(e){}
+  }
+}
+
+function showNotif(opts){
+  // opts: { type, name, avatar, avatar_type, action, text, taskId, onClick }
+  const container = document.getElementById('notif-container');
+  const card = document.createElement('div');
+  card.className = 'notif-card';
+  card.dataset.type = opts.type || 'task';
+
+  const now = new Date();
+  const timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+  const avatarHTML = opts.avatar
+    ? avHTML(opts.avatar, 36, opts.avatar_type || 'emoji')
+    : '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';
+
+  card.innerHTML = `
+    <div class="notif-accent"></div>
+    <div class="notif-avatar">${avatarHTML}</div>
+    <div class="notif-body">
+      <div class="notif-header">
+        <span class="notif-name">${esc(opts.name || '系統')}</span>
+        <span class="notif-action">${esc(opts.action || '')}</span>
+        <span class="notif-time">${timeStr}</span>
+      </div>
+      <div class="notif-text">${esc(opts.text || '')}</div>
     </div>
-    <div class="toast-border"></div>`;
-  document.body.appendChild(d);
-  if(_toastTimer) clearTimeout(_toastTimer);
-  _toastTimer=setTimeout(()=>{d.classList.add('out');setTimeout(()=>d.remove(),350);},4500);
+    <button class="notif-close" onclick="event.stopPropagation();this.parentElement.classList.add('out');setTimeout(()=>this.parentElement.remove(),250);">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  `;
+
+  // 點擊跳轉
+  if(opts.taskId){
+    card.onclick = () => {
+      openDrawer(opts.taskId);
+      card.classList.add('out');
+      setTimeout(()=>card.remove(),250);
+    };
+  } else if(opts.type === 'chat'){
+    card.onclick = () => {
+      // 手機版切換到留言板 tab
+      if(window.innerWidth < 640) setMobTab('chat');
+      // 滾動到底部
+      const chatList = document.getElementById('chat-list');
+      if(chatList) chatList.scrollTop = chatList.scrollHeight;
+      card.classList.add('out');
+      setTimeout(()=>card.remove(),250);
+    };
+  }
+
+  container.appendChild(card);
+  playNotifSound();
+
+  // 自動消失（6 秒）
+  setTimeout(()=>{
+    if(card.parentElement){
+      card.classList.add('out');
+      setTimeout(()=>card.remove(),250);
+    }
+  }, 6000);
+
+  // 最多顯示 5 個通知
+  const cards = container.querySelectorAll('.notif-card:not(.out)');
+  if(cards.length > 5){
+    const oldest = cards[0];
+    oldest.classList.add('out');
+    setTimeout(()=>oldest.remove(),250);
+  }
+}
+
+// 保留舊的 showToast 做為簡單通知的備用
+function showToast(icon, title, msg){
+  showNotif({ type:'task', name:title, action:'', text:msg, avatar:icon, avatar_type:'emoji' });
 }
 
 function sendBrowserNotif(title, body){
@@ -1486,28 +1868,59 @@ function connectSSE(){
     try {
       const entry = JSON.parse(e.data);
 
-      // Handle sync event (two-way binding)
+      // Handle sync event (two-way binding) - 靜默同步，不顯示通知
       if(entry.type === 'sync'){
         const isSelf = entry.from_ip === myIP;
         if(!isSelf){
-          // Update tasks from server broadcast
           tasks = entry.tasks;
           localStorage.setItem('tasks_v4', JSON.stringify(tasks));
           render();
-          showToast('🔄', '資料同步', '已從伺服器取得最新任務');
+        }
+        return;
+      }
+
+      // Handle chat message - 留言板新訊息通知
+      if(entry.type === 'chat'){
+        const isSelf = entry.from_ip === myIP;
+        if(!isSelf && entry.message){
+          chatMessages.push(entry.message);
+          renderChat();
+          showNotif({
+            type: 'chat',
+            name: entry.message.name,
+            avatar: entry.message.avatar,
+            avatar_type: entry.message.avatar_type,
+            action: '發送訊息',
+            text: entry.message.text
+          });
+          sendBrowserNotif(`💬 ${entry.message.name}`, entry.message.text);
         }
         return;
       }
 
       // Handle history notifications
       const isSelf = entry.ip === myIP;
-      // Notify everyone for 新增任務 and 新增留言; skip self
-      if(!isSelf && (entry.action==='新增任務' || entry.action==='新增留言')){
-        const icon = entry.action==='新增留言' ? '💬' : '📋';
-        const title = `${entry.user} ${entry.action}`;
-        const body  = entry.task + (entry.detail ? `：${entry.detail}` : '');
-        showToast(icon, title, body);
-        sendBrowserNotif(`${icon} ${title}`, body);
+      if(isSelf) return; // 自己的操作不通知
+
+      // 需要通知的動作：新增任務、新增留言、標記完成、恢復任務、編輯任務、刪除任務
+      // 不需要通知的動作：接手處理、取消接手
+      const notifyActions = ['新增任務', '新增留言', '標記完成', '恢復任務', '編輯任務', '刪除任務'];
+      if(notifyActions.includes(entry.action)){
+        let type = 'task';
+        let action = entry.action;
+        if(entry.action === '新增留言') type = 'comment';
+        else if(entry.action === '標記完成') type = 'done';
+
+        showNotif({
+          type,
+          name: entry.user,
+          avatar: entry.avatar,
+          avatar_type: entry.avatar_type,
+          action,
+          text: entry.task + (entry.detail ? `：${entry.detail}` : ''),
+          taskId: entry.task_id
+        });
+        sendBrowserNotif(`${entry.user} ${action}`, entry.task);
       }
     } catch(_){}
   };
@@ -1534,6 +1947,7 @@ function setMobTab(panel){
   document.querySelector('.sug-panel').classList.toggle('mob-show', panel==='sug');
   document.querySelector('.right-area').classList.toggle('mob-show', panel==='quadrant');
   document.querySelector('.completed-section').classList.toggle('mob-show', panel==='done');
+  document.querySelector('.chat-panel').classList.toggle('mob-show', panel==='chat');
 }
 
 function initMobTabs(){
@@ -1559,5 +1973,8 @@ initMobTabs();
 connectSSE();
 setTimeout(requestNotifPermission, 1500);
 </script>
+
+<!-- Notification Container -->
+<div class="notif-container" id="notif-container"></div>
 </body>
 </html>

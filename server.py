@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import http.server, json, threading, queue
 from pathlib import Path
-from datetime import date
+from datetime import date, timedelta
 
 HOST = "0.0.0.0"
 PORT = 8080
@@ -9,10 +9,30 @@ SERVE_DIR = Path(__file__).parent
 TASKS_FILE = SERVE_DIR / 'tasks.json'
 USERS_FILE = SERVE_DIR / 'users.json'
 CHAT_FILE = SERVE_DIR / 'chat.json'
+POINTS_FILE = SERVE_DIR / 'points.json'
 AVATARS_DIR = SERVE_DIR / 'avatars'
 _tasks_lock = threading.Lock()
 _users_lock = threading.Lock()
 _chat_lock = threading.Lock()
+_points_lock = threading.Lock()
+
+def get_week_key():
+    """Return ISO week key, e.g. '2026-W16'"""
+    today = date.today()
+    iso = today.isocalendar()
+    return f"{iso[0]}-W{iso[1]:02d}"
+
+def load_points():
+    if POINTS_FILE.exists():
+        try:
+            return json.loads(POINTS_FILE.read_text(encoding='utf-8'))
+        except:
+            pass
+    return {"rockets": {}, "votes": {}}
+
+def save_points(data):
+    with _points_lock:
+        POINTS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 def load_tasks():
     """Load tasks from JSON file"""
@@ -99,6 +119,17 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # Return all users
             users = load_users()
             body = json.dumps(users, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", len(body))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif self.path == '/api/points':
+            data = load_points()
+            # 附加本週 key 給前端判斷
+            data['week'] = get_week_key()
+            body = json.dumps(data, ensure_ascii=False).encode('utf-8')
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", len(body))
@@ -321,6 +352,60 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     }, ensure_ascii=False)
                     _broadcast(chat_msg)
                 resp = b'{"ok":true}'
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(resp))
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_error(400, str(e))
+
+        elif self.path == '/api/points/vote':
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                req = json.loads(body)
+                voter = req.get('voter')       # 投票者名稱
+                voted_for = req.get('votedFor') # 被投票者名稱
+                task_id = req.get('taskId')
+                task_text = req.get('taskText', '')
+
+                if not voter or not voted_for:
+                    self.send_error(400, 'Missing voter or votedFor')
+                    return
+
+                week = get_week_key()
+                data = load_points()
+                if 'rockets' not in data: data['rockets'] = {}
+                if 'votes' not in data: data['votes'] = {}
+                if week not in data['votes']: data['votes'][week] = {}
+
+                # 檢查本週是否已投票
+                if voter in data['votes'][week]:
+                    resp = json.dumps({"ok": False, "error": "already_voted"}).encode()
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.send_header('Content-Length', len(resp))
+                    self.end_headers()
+                    self.wfile.write(resp)
+                    return
+
+                # 記錄投票並增加火箭
+                data['votes'][week][voter] = {'votedFor': voted_for, 'taskId': task_id, 'taskText': task_text}
+                data['rockets'][voted_for] = data['rockets'].get(voted_for, 0) + 1
+                save_points(data)
+
+                # SSE 廣播積分更新
+                _broadcast(json.dumps({
+                    "type": "points_update",
+                    "rockets": data['rockets'],
+                    "voter": voter,
+                    "votedFor": voted_for,
+                    "taskText": task_text,
+                    "week": week
+                }, ensure_ascii=False))
+
+                resp = json.dumps({"ok": True, "rockets": data['rockets']}).encode()
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.send_header('Content-Length', len(resp))

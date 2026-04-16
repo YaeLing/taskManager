@@ -2,7 +2,10 @@
 tasks.json
 users.json
 chat.json
+server.log
+points.json
 history/
+avatars/
 
 # User uploaded avatars
 avatars/

@@ -11,12 +11,14 @@ USERS_FILE = SERVE_DIR / 'users.json'
 CHAT_FILE = SERVE_DIR / 'chat.json'
 POINTS_FILE = SERVE_DIR / 'points.json'
 LEAVES_FILE = SERVE_DIR / 'leaves.json'
+PERSONAL_TASKS_FILE = SERVE_DIR / 'personal_tasks.json'
 AVATARS_DIR = SERVE_DIR / 'avatars'
 _tasks_lock = threading.Lock()
 _users_lock = threading.Lock()
 _chat_lock = threading.Lock()
 _points_lock = threading.Lock()
 _leaves_lock = threading.Lock()
+_personal_tasks_lock = threading.Lock()
 
 def load_leaves():
     if LEAVES_FILE.exists():
@@ -32,6 +34,18 @@ def load_leaves():
 def save_leaves(leaves):
     with _leaves_lock:
         LEAVES_FILE.write_text(json.dumps(leaves, ensure_ascii=False, indent=2), encoding='utf-8')
+
+def load_personal_tasks():
+    if PERSONAL_TASKS_FILE.exists():
+        try:
+            return json.loads(PERSONAL_TASKS_FILE.read_text(encoding='utf-8'))
+        except:
+            pass
+    return {}
+
+def save_personal_tasks(data):
+    with _personal_tasks_lock:
+        PERSONAL_TASKS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
 
 def get_week_key():
     """Return ISO week key, e.g. '2026-W16'"""
@@ -145,6 +159,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
         elif self.path == '/api/leaves':
             leaves = load_leaves()
             body = json.dumps(leaves, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", len(body))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif self.path.startswith('/api/personal-tasks'):
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            name = qs.get('name', [''])[0]
+            if not name:
+                self.send_error(400, 'Missing name'); return
+            data = load_personal_tasks()
+            tasks_for_user = data.get(name, [])
+            body = json.dumps({'tasks': tasks_for_user}, ensure_ascii=False).encode('utf-8')
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", len(body))
@@ -517,6 +546,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(resp)
             except Exception as e:
                 self.send_error(400, str(e))
+        elif self.path == '/api/personal-tasks':
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                req = json.loads(body)
+                name = req.get('name', '')
+                if not name:
+                    self.send_error(400, 'Missing name'); return
+                data = load_personal_tasks()
+                data[name] = req.get('tasks', [])
+                save_personal_tasks(data)
+                resp = b'{"ok":true}'
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(resp))
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_error(400, str(e))
+
         else:
             self.send_error(404)
 

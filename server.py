@@ -10,11 +10,28 @@ TASKS_FILE = SERVE_DIR / 'tasks.json'
 USERS_FILE = SERVE_DIR / 'users.json'
 CHAT_FILE = SERVE_DIR / 'chat.json'
 POINTS_FILE = SERVE_DIR / 'points.json'
+LEAVES_FILE = SERVE_DIR / 'leaves.json'
 AVATARS_DIR = SERVE_DIR / 'avatars'
 _tasks_lock = threading.Lock()
 _users_lock = threading.Lock()
 _chat_lock = threading.Lock()
 _points_lock = threading.Lock()
+_leaves_lock = threading.Lock()
+
+def load_leaves():
+    if LEAVES_FILE.exists():
+        try:
+            leaves = json.loads(LEAVES_FILE.read_text(encoding='utf-8'))
+            today = date.today().isoformat()
+            # 保留今天及未來的假期
+            return [l for l in leaves if l.get('date', '') >= today]
+        except:
+            pass
+    return []
+
+def save_leaves(leaves):
+    with _leaves_lock:
+        LEAVES_FILE.write_text(json.dumps(leaves, ensure_ascii=False, indent=2), encoding='utf-8')
 
 def get_week_key():
     """Return ISO week key, e.g. '2026-W16'"""
@@ -119,6 +136,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
             # Return all users
             users = load_users()
             body = json.dumps(users, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", len(body))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif self.path == '/api/leaves':
+            leaves = load_leaves()
+            body = json.dumps(leaves, ensure_ascii=False).encode('utf-8')
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", len(body))
@@ -352,6 +378,58 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     }, ensure_ascii=False)
                     _broadcast(chat_msg)
                 resp = b'{"ok":true}'
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(resp))
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_error(400, str(e))
+
+        elif self.path == '/api/leaves':
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                req = json.loads(body)
+                action = req.get('action')  # 'add' or 'remove'
+                name   = req.get('name')
+                today  = date.today().isoformat()
+                leaves = load_leaves()
+
+                if action == 'add':
+                    leave_date = req.get('date', '')
+                    if not leave_date or leave_date < today:
+                        self.send_error(400, 'Invalid date')
+                        return
+                    # 同一人同一天只保留一筆
+                    leaves = [l for l in leaves if not (l['name'] == name and l['date'] == leave_date)]
+                    leaves.append({
+                        'name': name,
+                        'avatar': req.get('avatar', ''),
+                        'avatar_type': req.get('avatar_type', 'emoji'),
+                        'date': leave_date,
+                        'note': req.get('note', '')
+                    })
+                    leaves.sort(key=lambda l: l['date'])
+                    save_leaves(leaves)
+                    _broadcast(json.dumps({
+                        'type': 'leave_update',
+                        'action': 'add',
+                        'leave': leaves[-1] if leaves else {},
+                        'leaves': leaves
+                    }, ensure_ascii=False))
+
+                elif action == 'remove':
+                    leave_date = req.get('date', '')
+                    leaves = [l for l in leaves if not (l['name'] == name and l['date'] == leave_date)]
+                    save_leaves(leaves)
+                    _broadcast(json.dumps({
+                        'type': 'leave_update',
+                        'action': 'remove',
+                        'leaves': leaves
+                    }, ensure_ascii=False))
+
+                resp = json.dumps({'ok': True, 'leaves': leaves}).encode()
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')
                 self.send_header('Content-Length', len(resp))

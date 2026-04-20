@@ -147,6 +147,74 @@ header::after {
 .rocket-bar-wrap { flex: 1; height: 4px; background: var(--border2); border-radius: 999px; overflow: hidden; }
 .rocket-bar { height: 100%; border-radius: 999px; background: linear-gradient(90deg, #fbbf24, #f59e0b); transition: width .4s ease; }
 
+/* ═══ LEAVE SYSTEM ═══ */
+.leave-area {
+  flex-shrink: 0; border-bottom: 1px solid var(--border2);
+  padding: 10px 14px;
+}
+.leave-head {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+}
+.leave-title { font-size: .75rem; font-weight: 700; color: var(--text); }
+.leave-add-btn {
+  font-size: .65rem; font-weight: 600; padding: 3px 10px;
+  border-radius: 999px; border: 1px solid var(--dim); color: var(--dim);
+  background: transparent; cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.leave-add-btn:hover { border-color: var(--q2); color: var(--q2); }
+.leave-list { display: flex; flex-direction: column; gap: 5px; }
+.leave-empty { font-size: .7rem; color: var(--dim); opacity: .5; }
+.leave-row {
+  display: flex; align-items: center; gap: 7px;
+  padding: 4px 6px; border-radius: 7px; background: var(--s2);
+}
+.leave-av {
+  width: 20px; height: 20px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--q2), var(--q1));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; flex-shrink: 0; overflow: hidden;
+}
+.leave-av img { width: 100%; height: 100%; object-fit: cover; }
+.leave-name { font-size: .72rem; font-weight: 600; color: var(--text); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leave-date { font-size: .65rem; color: var(--q2); font-family: var(--mono); flex-shrink: 0; }
+.leave-note { font-size: .62rem; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.leave-del { background: none; border: none; cursor: pointer; color: transparent; font-size: .7rem; padding: 2px 4px; border-radius: 4px; transition: color .15s; flex-shrink: 0; }
+.leave-row:hover .leave-del { color: var(--dim); }
+.leave-del:hover { color: var(--q1) !important; }
+.leave-today { background: rgba(184,148,96,.12); border: 1px solid rgba(184,148,96,.3); }
+.leave-today .leave-date { color: var(--q1); font-weight: 700; }
+
+/* ─── Leave Modal ─── */
+.leave-modal { max-width: 360px; }
+.leave-modal .field input[type=date] { width: 100%; }
+.leave-modal .field input[type=text] { width: 100%; }
+
+/* ─── Leave Full-screen notification ─── */
+.leave-alert {
+  position: fixed; inset: 0; z-index: 9998;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10,8,5,.8); backdrop-filter: blur(10px);
+  animation: celebFadeIn .4s ease; cursor: pointer;
+}
+.leave-alert.out { animation: celebFadeOut .5s ease forwards; }
+.leave-alert-card {
+  text-align: center; max-width: 420px; pointer-events: none;
+  animation: celebCardIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+.leave-alert-emoji { font-size: 4rem; margin-bottom: 12px; animation: rocketBounce 1.2s ease infinite alternate; }
+.leave-alert-title { font-size: 1.5rem; font-weight: 800; color: #fff; margin-bottom: 8px; text-shadow: 0 2px 20px rgba(184,148,96,.6); }
+.leave-alert-people { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.leave-alert-person {
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 12px; padding: 10px 20px;
+}
+.leave-alert-av { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 18px; background: rgba(255,255,255,.1); flex-shrink: 0; }
+.leave-alert-av img { width: 100%; height: 100%; object-fit: cover; }
+.leave-alert-pname { font-size: 1rem; font-weight: 700; color: #fff; }
+.leave-alert-note { font-size: .78rem; color: rgba(255,255,255,.6); }
+.leave-alert-dismiss { font-size: .75rem; color: rgba(255,255,255,.35); margin-top: 20px; }
+
 /* ═══ VOTE MODAL ═══ */
 .vote-modal { max-width: 420px; }
 .vote-desc { font-size: .77rem; color: var(--dim); margin: 0 0 12px; line-height: 1.5; }
@@ -1004,6 +1072,17 @@ header::after {
       </div>
     </div>
 
+    <!-- 📅 請假公告 -->
+    <div class="leave-area" id="leave-area">
+      <div class="leave-head">
+        <span class="leave-title">📅 請假公告</span>
+        <button class="leave-add-btn" onclick="openLeaveModal()">+ 請假</button>
+      </div>
+      <div class="leave-list" id="leave-list">
+        <div class="leave-empty">目前無人請假</div>
+      </div>
+    </div>
+
     <div class="chat-head">
       <div class="chat-head-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round">
@@ -1027,6 +1106,27 @@ header::after {
     </div>
   </aside>
 </div><!-- /layout -->
+
+<!-- Leave Modal -->
+<div class="modal-overlay" id="leave-ov" onclick="if(event.target===this)closeLeaveModal()" style="display:none">
+  <div class="modal leave-modal">
+    <div class="modal-head">
+      <h3 class="modal-title">📅 新增請假</h3>
+      <button class="modal-close" onclick="closeLeaveModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="field">
+      <label>請假日期</label>
+      <input type="date" id="leave-date-input">
+    </div>
+    <div class="field">
+      <label>備註 <span>（選填）</span></label>
+      <input type="text" id="leave-note-input" placeholder="例：看診、家庭因素…" maxlength="30">
+    </div>
+    <button class="vote-confirm-btn" onclick="submitLeave()" style="margin-top:4px">確認請假</button>
+  </div>
+</div>
 
 <!-- Vote Modal -->
 <div class="modal-overlay" id="vote-ov" onclick="if(event.target===this)closeVoteModal()" style="display:none">
@@ -1175,8 +1275,8 @@ let customAvUrl = null;   // URL for custom uploaded avatar
 
 async function initProfile(){
   profile = JSON.parse(localStorage.getItem('user_profile')||'null');
-  // Load tasks, chat, and points from server
-  await Promise.all([loadTasks(), loadChat(), loadPoints()]);
+  // Load tasks, chat, points, and leaves from server
+  await Promise.all([loadTasks(), loadChat(), loadPoints(), loadLeaves()]);
   if(!profile){
     showSetup(false);
   } else {
@@ -1430,6 +1530,148 @@ let selQ=1, editId=null, dragId=null, openTaskId=null, doneOpen=true, myIP='—'
 let _saving = false;
 
 fetch('/api/ip').then(r=>r.json()).then(d=>{myIP=d.ip;}).catch(()=>{});
+
+/* ─── LEAVE SYSTEM ─── */
+let leaveData = [];
+
+async function loadLeaves(){
+  try {
+    const res = await fetch('/api/leaves');
+    if(res.ok){
+      leaveData = await res.json();
+      renderLeaves();
+      checkTodayLeaves();
+    }
+  } catch(e){}
+}
+
+function renderLeaves(){
+  const el = document.getElementById('leave-list');
+  if(!leaveData.length){
+    el.innerHTML = '<div class="leave-empty">目前無人請假</div>';
+    return;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  el.innerHTML = leaveData.map(l => {
+    const isToday = l.date === today;
+    const isMine  = profile && l.name === profile.name;
+    const dateLabel = isToday ? '今天' : l.date;
+    return `<div class="leave-row${isToday?' leave-today':''}">
+      <div class="leave-av">${avHTML(l.avatar, 20, l.avatar_type)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:5px">
+          <span class="leave-name">${esc(l.name)}</span>
+          <span class="leave-date">${esc(dateLabel)}</span>
+        </div>
+        ${l.note ? `<div class="leave-note">${esc(l.note)}</div>` : ''}
+      </div>
+      ${isMine ? `<button class="leave-del" onclick="removeLeave('${l.date}')" title="取消請假">✕</button>` : ''}
+    </div>`;
+  }).join('');
+}
+
+let _todayLeaveShown = false;
+function checkTodayLeaves(){
+  if(_todayLeaveShown) return;
+  const today = new Date().toISOString().slice(0,10);
+  const todayLeaves = leaveData.filter(l => l.date === today);
+  if(!todayLeaves.length) return;
+  _todayLeaveShown = true;
+  // 延遲 1.5 秒，讓頁面完全載入後再顯示
+  setTimeout(() => showLeaveAlert(todayLeaves), 1500);
+}
+
+function showLeaveAlert(leaves){
+  const overlay = document.createElement('div');
+  overlay.className = 'leave-alert';
+  const peopleHTML = leaves.map(l => `
+    <div class="leave-alert-person">
+      <div class="leave-alert-av">${avHTML(l.avatar, 32, l.avatar_type)}</div>
+      <div>
+        <div class="leave-alert-pname">${esc(l.name)}</div>
+        ${l.note ? `<div class="leave-alert-note">${esc(l.note)}</div>` : ''}
+      </div>
+    </div>`).join('');
+  overlay.innerHTML = `
+    <div class="leave-alert-card">
+      <div class="leave-alert-emoji">🏖️</div>
+      <div class="leave-alert-title">今天有人請假</div>
+      <div class="leave-alert-people">${peopleHTML}</div>
+      <div class="leave-alert-dismiss">點擊任意處關閉</div>
+    </div>`;
+  overlay.onclick = () => {
+    overlay.classList.add('out');
+    setTimeout(()=>overlay.remove(), 500);
+  };
+  document.body.appendChild(overlay);
+  // 播放溫和提示音
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [440, 554, 659].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq; osc.type = 'sine';
+      const t = ctx.currentTime + i * .18;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(.25, t + .05);
+      gain.gain.exponentialRampToValueAtTime(.01, t + .4);
+      osc.start(t); osc.stop(t + .4);
+    });
+  } catch(e){}
+}
+
+function openLeaveModal(){
+  if(!profile){ showSetup(false); return; }
+  // 預設日期為明天
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('leave-date-input').value = tomorrow.toISOString().slice(0,10);
+  document.getElementById('leave-date-input').min = new Date().toISOString().slice(0,10);
+  document.getElementById('leave-note-input').value = '';
+  document.getElementById('leave-ov').style.display = 'flex';
+}
+
+function closeLeaveModal(){
+  document.getElementById('leave-ov').style.display = 'none';
+}
+
+async function submitLeave(){
+  if(!profile) return;
+  const dateVal = document.getElementById('leave-date-input').value;
+  const note    = document.getElementById('leave-note-input').value.trim();
+  if(!dateVal) return;
+  try {
+    const res = await fetch('/api/leaves', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        action: 'add', name: profile.name,
+        avatar: profile.avatar, avatar_type: profile.avatar_type || 'emoji',
+        date: dateVal, note
+      })
+    });
+    const data = await res.json();
+    if(data.ok){
+      leaveData = data.leaves;
+      renderLeaves();
+      closeLeaveModal();
+    }
+  } catch(e){}
+}
+
+async function removeLeave(date){
+  if(!profile) return;
+  try {
+    const res = await fetch('/api/leaves', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ action: 'remove', name: profile.name, date })
+    });
+    const data = await res.json();
+    if(data.ok){ leaveData = data.leaves; renderLeaves(); }
+  } catch(e){}
+}
 
 /* ─── ROCKETS / POINTS ─── */
 let pointsData = { rockets: {}, votes: {}, week: '' };
@@ -2275,6 +2517,25 @@ function connectSSE(){
           tasks = entry.tasks;
           localStorage.setItem('tasks_v4', JSON.stringify(tasks));
           render();
+        }
+        return;
+      }
+
+      // Handle leave update
+      if(entry.type === 'leave_update'){
+        leaveData = entry.leaves || [];
+        renderLeaves();
+        // 通知其他人（非本人）有人請假
+        const isSelf = entry.action === 'add' && entry.leave?.name === profile?.name;
+        if(!isSelf && entry.action === 'add' && entry.leave){
+          const l = entry.leave;
+          const today = new Date().toISOString().slice(0,10);
+          if(l.date === today){
+            // 今天請假 → 全螢幕通知
+            showLeaveAlert([l]);
+          } else {
+            showNotif({ type:'task', name:l.name, avatar:l.avatar, avatar_type:l.avatar_type, action:'請假', text:`${l.date}${l.note ? ' · ' + l.note : ''}` });
+          }
         }
         return;
       }

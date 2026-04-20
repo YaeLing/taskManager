@@ -801,9 +801,9 @@ header::after {
   .col-resizer { display:none; }
 
   /* Suggested panel */
-  .sug-panel { border-right:none; border-bottom:1px solid var(--border2); display:none; flex:none; }
-  .sug-panel.mob-show { display:flex; }
-  .sug-list { max-height:60svh; }
+  .sug-panel { border-right:none; border-bottom:1px solid var(--border2); display:none; flex:none; width:100%; }
+  .sug-panel.mob-show { display:flex; height:calc(100svh - 110px); }
+  .sug-list { max-height:none; flex:1; }
 
   /* Quadrant */
   .right-area { display:none; flex:none; }
@@ -840,9 +840,9 @@ header::after {
   .right-area.mob-show-done .completed-section { display:flex; }
 
   /* Chat panel */
-  .chat-panel { display:none; border-left:none; border-top:1px solid var(--border2); }
-  .chat-panel.mob-show { display:flex; }
-  .chat-list { max-height:60svh; }
+  .chat-panel { display:none; border-left:none; border-top:1px solid var(--border2); width:100%; }
+  .chat-panel.mob-show { display:flex; height:calc(100svh - 110px); }
+  .chat-list { max-height:none; }
 
   /* Drawer full-screen */
   .drawer { width:100%; max-width:100%; }
@@ -1117,8 +1117,12 @@ header::after {
       </button>
     </div>
     <div class="field">
-      <label>請假日期</label>
-      <input type="date" id="leave-date-input">
+      <label>開始日期</label>
+      <input type="date" id="leave-date-input" onchange="syncLeaveEndMin()">
+    </div>
+    <div class="field">
+      <label>結束日期 <span>（選填，單天可不填）</span></label>
+      <input type="date" id="leave-end-input">
     </div>
     <div class="field">
       <label>備註 <span>（選填）</span></label>
@@ -1553,9 +1557,14 @@ function renderLeaves(){
   }
   const today = new Date().toISOString().slice(0,10);
   el.innerHTML = leaveData.map(l => {
-    const isToday = l.date === today;
+    const end = l.endDate || l.date;
+    const isToday = l.date <= today && today <= end;
     const isMine  = profile && l.name === profile.name;
-    const dateLabel = isToday ? '今天' : l.date;
+    const fmtDate = d => d ? d.slice(5) : '';  // YYYY-MM-DD → MM-DD
+    const isRange = end && end !== l.date;
+    const dateLabel = isToday
+      ? (isRange ? `今天（${fmtDate(l.date)} ~ ${fmtDate(end)}）` : '今天')
+      : (isRange ? `${fmtDate(l.date)} ~ ${fmtDate(end)}` : fmtDate(l.date));
     return `<div class="leave-row${isToday?' leave-today':''}">
       <div class="leave-av">${avHTML(l.avatar, 20, l.avatar_type)}</div>
       <div style="flex:1;min-width:0">
@@ -1574,7 +1583,7 @@ let _todayLeaveShown = false;
 function checkTodayLeaves(){
   if(_todayLeaveShown) return;
   const today = new Date().toISOString().slice(0,10);
-  const todayLeaves = leaveData.filter(l => l.date === today);
+  const todayLeaves = leaveData.filter(l => l.date <= today && today <= (l.endDate || l.date));
   if(!todayLeaves.length) return;
   _todayLeaveShown = true;
   // 延遲 1.5 秒，讓頁面完全載入後再顯示
@@ -1584,14 +1593,20 @@ function checkTodayLeaves(){
 function showLeaveAlert(leaves){
   const overlay = document.createElement('div');
   overlay.className = 'leave-alert';
-  const peopleHTML = leaves.map(l => `
+  const fmtD = d => d ? d.slice(5) : '';
+  const peopleHTML = leaves.map(l => {
+    const end = l.endDate || l.date;
+    const dateRange = end !== l.date ? `${fmtD(l.date)} ~ ${fmtD(end)}` : fmtD(l.date);
+    return `
     <div class="leave-alert-person">
       <div class="leave-alert-av">${avHTML(l.avatar, 32, l.avatar_type)}</div>
       <div>
         <div class="leave-alert-pname">${esc(l.name)}</div>
+        <div class="leave-alert-note">${esc(dateRange)}</div>
         ${l.note ? `<div class="leave-alert-note">${esc(l.note)}</div>` : ''}
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   overlay.innerHTML = `
     <div class="leave-alert-card">
       <div class="leave-alert-emoji">🏖️</div>
@@ -1623,13 +1638,25 @@ function showLeaveAlert(leaves){
 
 function openLeaveModal(){
   if(!profile){ showSetup(false); return; }
-  // 預設日期為明天
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
-  document.getElementById('leave-date-input').value = tomorrow.toISOString().slice(0,10);
-  document.getElementById('leave-date-input').min = new Date().toISOString().slice(0,10);
+  const tomorrowStr = tomorrow.toISOString().slice(0,10);
+  const todayStr = new Date().toISOString().slice(0,10);
+  const startEl = document.getElementById('leave-date-input');
+  const endEl   = document.getElementById('leave-end-input');
+  startEl.value = tomorrowStr;
+  startEl.min   = todayStr;
+  endEl.value   = '';
+  endEl.min     = tomorrowStr;
   document.getElementById('leave-note-input').value = '';
   document.getElementById('leave-ov').style.display = 'flex';
+}
+
+function syncLeaveEndMin(){
+  const startVal = document.getElementById('leave-date-input').value;
+  const endEl    = document.getElementById('leave-end-input');
+  endEl.min = startVal;
+  if(endEl.value && endEl.value < startVal) endEl.value = '';
 }
 
 function closeLeaveModal(){
@@ -1639,6 +1666,7 @@ function closeLeaveModal(){
 async function submitLeave(){
   if(!profile) return;
   const dateVal = document.getElementById('leave-date-input').value;
+  const endVal  = document.getElementById('leave-end-input').value;
   const note    = document.getElementById('leave-note-input').value.trim();
   if(!dateVal) return;
   try {
@@ -1648,7 +1676,7 @@ async function submitLeave(){
       body: JSON.stringify({
         action: 'add', name: profile.name,
         avatar: profile.avatar, avatar_type: profile.avatar_type || 'emoji',
-        date: dateVal, note
+        date: dateVal, endDate: endVal || dateVal, note
       })
     });
     const data = await res.json();

@@ -24,7 +24,7 @@ def load_leaves():
             leaves = json.loads(LEAVES_FILE.read_text(encoding='utf-8'))
             today = date.today().isoformat()
             # 保留今天及未來的假期
-            return [l for l in leaves if l.get('date', '') >= today]
+            return [l for l in leaves if (l.get('endDate') or l.get('date', '')) >= today]
         except:
             pass
     return []
@@ -398,16 +398,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
                 if action == 'add':
                     leave_date = req.get('date', '')
+                    end_date   = req.get('endDate', '') or leave_date
                     if not leave_date or leave_date < today:
                         self.send_error(400, 'Invalid date')
                         return
-                    # 同一人同一天只保留一筆
+                    if end_date < leave_date:
+                        end_date = leave_date
+                    # 同一人同一起始日只保留一筆
                     leaves = [l for l in leaves if not (l['name'] == name and l['date'] == leave_date)]
                     leaves.append({
                         'name': name,
                         'avatar': req.get('avatar', ''),
                         'avatar_type': req.get('avatar_type', 'emoji'),
                         'date': leave_date,
+                        'endDate': end_date,
                         'note': req.get('note', '')
                     })
                     leaves.sort(key=lambda l: l['date'])

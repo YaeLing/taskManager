@@ -398,7 +398,12 @@ header::after {
   position: relative;
 }
 .sug-item:hover { background: rgba(255,255,255,.03); border-left-color: var(--ic); }
-.sug-item:hover .sug-handle-btn { opacity: 1; }
+.sug-done-btn { opacity: 0; flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; border: 1.5px solid var(--border2); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; align-self: center; }
+.sug-done-btn svg { opacity: .5; transition: opacity .15s; }
+.sug-done-btn:hover { border-color: var(--q3); background: rgba(106,154,120,.12); }
+.sug-done-btn:hover svg { opacity: 1; stroke: var(--q3); }
+.sug-item:hover .sug-handle-btn,
+.sug-item:hover .sug-done-btn { opacity: 1; }
 .sug-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 .sug-handler-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--acc), var(--q4)); display: flex; align-items: center; justify-content: center; overflow: hidden; box-shadow: 0 2px 8px rgba(40,30,20,.15); font-size: 16px; line-height: 1; }
 .sug-handler-avatar img { width: 100%; height: 100%; object-fit: cover; }
@@ -774,6 +779,7 @@ header::after {
 
 /* ═══ MOBILE TAB BAR ═══ */
 .mob-tabs { display:none; }
+.mob-mode-bar { display:none; }
 
 /* ═══ TABLET (640–899px) ═══ */
 @media (max-width: 899px) and (min-width: 640px) {
@@ -796,6 +802,21 @@ header::after {
   .h-add span { display:none; }
   .h-add { padding:7px 10px; }
   .team-name-btn { display:none; }
+  .mode-toggle { display:none; }
+
+  /* Mobile mode bar */
+  .mob-mode-bar {
+    display: flex; background: var(--panel);
+    border-bottom: 1px solid var(--border2);
+    padding: 6px 12px; gap: 6px;
+    position: sticky; top: 0; z-index: 51;
+  }
+  .mob-mode-btn {
+    flex: 1; padding: 6px; border-radius: 7px; border: 1px solid var(--border2);
+    font-size: .75rem; font-weight: 600; font-family: inherit;
+    background: transparent; color: var(--dim); cursor: pointer; transition: all .15s;
+  }
+  .mob-mode-btn.active { background: var(--acc); color: #fff; border-color: var(--acc); }
 
   /* Mobile tab bar */
   .mob-tabs {
@@ -960,7 +981,7 @@ header::after {
   <div class="h-divider"></div>
   <button class="team-name-btn" onclick="editTeamName()" title="點擊編輯團隊名稱">
     <div class="team-name-lbl">Team</div>
-    <div class="team-name-val" id="h-team-name">My Team</div>
+    <div class="team-name-val" id="h-team-name">Firmware Update Team</div>
   </button>
   <div class="mode-toggle">
     <button class="mode-btn active" id="mode-team-btn" onclick="setViewMode('team')">Team</button>
@@ -978,6 +999,12 @@ header::after {
     <span>新增任務</span>
   </button>
 </header>
+
+<!-- MOBILE MODE TOGGLE -->
+<div class="mob-mode-bar" id="mob-mode-bar">
+  <button class="mob-mode-btn active" id="mob-mode-team" onclick="setViewMode('team')">Team</button>
+  <button class="mob-mode-btn" id="mob-mode-personal" onclick="setViewMode('personal')">個人</button>
+</div>
 
 <!-- MOBILE TAB BAR -->
 <nav class="mob-tabs" id="mob-tabs">
@@ -1326,9 +1353,14 @@ let _teamTasks = null; // snapshot when switching to personal
 async function setViewMode(mode){
   if(viewMode === mode) return;
   if(mode === 'personal' && !profile){ showSetup(false); return; }
+  // Flush pending save before switching
+  if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer = null; }
+  if(viewMode === 'personal') await savePersonalTasks();
   viewMode = mode;
   document.getElementById('mode-team-btn').classList.toggle('active', mode === 'team');
   document.getElementById('mode-personal-btn').classList.toggle('active', mode === 'personal');
+  document.getElementById('mob-mode-team').classList.toggle('active', mode === 'team');
+  document.getElementById('mob-mode-personal').classList.toggle('active', mode === 'personal');
   if(mode === 'personal'){
     _teamTasks = tasks.slice();
     await loadPersonalTasks();
@@ -2166,6 +2198,9 @@ function render(){
         <div class="sug-right">
           ${handlersAvatars}
           <button class="sug-handle-btn${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'加入處理'}">${isMine?'處理中':'接手'}</button>
+          <button class="sug-done-btn" onclick="toggleDone(${t.id},event)" title="標記完成">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
         </div>
       </div>`;
     }).join('');
@@ -2437,6 +2472,7 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 /* ─── HISTORY LOGGING ─── */
 function logHistory(action, task, detail=''){
+  if(viewMode === 'personal') return;
   const entry = {
     time: ts(),
     user: profile?.name || '未知使用者',
@@ -2634,9 +2670,14 @@ function connectSSE(){
       if(entry.type === 'sync'){
         const isSelf = entry.from_ip === myIP;
         if(!isSelf){
-          tasks = entry.tasks;
-          localStorage.setItem('tasks_v4', JSON.stringify(tasks));
-          render();
+          if(viewMode === 'personal'){
+            // 個人模式：team sync 只更新快照，不動當前畫面
+            _teamTasks = entry.tasks;
+          } else {
+            tasks = entry.tasks;
+            localStorage.setItem('tasks_v4', JSON.stringify(tasks));
+            render();
+          }
         }
         return;
       }

@@ -540,6 +540,44 @@ header::after {
 .q-empty svg { opacity:.5; }
 
 /* ═══ COMPLETED SECTION ═══ */
+/* Personal flat list */
+.personal-list {
+  display: none; flex-direction: column; flex: 1; overflow-y: auto;
+  padding: 12px 14px; gap: 6px;
+  background: var(--bg);
+}
+body.personal-mode .matrix { display: none; }
+body.personal-mode .personal-list { display: flex; }
+body.personal-mode .field-quadrant { display: none; }
+body.personal-mode .sug-sub { display: none; }
+
+.ptask {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: 9px;
+  background: var(--panel); border: 1px solid var(--border2);
+  transition: border-color .15s;
+}
+.ptask:hover { border-color: var(--acc); }
+.ptask-check {
+  width: 20px; height: 20px; border-radius: 50%;
+  border: 2px solid var(--border2); background: transparent;
+  cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+  transition: all .15s;
+}
+.ptask-check:hover { border-color: var(--q3); background: rgba(106,154,120,.1); }
+.ptask-check svg { display: none; }
+.ptask.done .ptask-check { background: var(--q3); border-color: var(--q3); }
+.ptask.done .ptask-check svg { display: block; stroke: #fff; }
+.ptask-body { flex: 1; min-width: 0; cursor: pointer; }
+.ptask-text { font-size: .85rem; line-height: 1.4; word-break: break-word; }
+.ptask.done .ptask-text { text-decoration: line-through; opacity: .5; }
+.ptask-due { font-size: .68rem; color: var(--dim); margin-top: 2px; }
+.ptask-due.overdue { color: var(--q1); }
+.ptask-del { background: none; border: none; cursor: pointer; color: var(--dim); padding: 4px 6px; border-radius: 5px; font-size: .75rem; flex-shrink: 0; opacity: 0; transition: opacity .15s; }
+.ptask:hover .ptask-del { opacity: 1; }
+.ptask-del:hover { color: var(--q1); background: rgba(184,114,106,.1); }
+.personal-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--dim); font-size: .8rem; gap: 8px; opacity: .6; }
+
 .completed-section {
   grid-column: 2; grid-row: 2;
   background: var(--panel);
@@ -611,6 +649,10 @@ header::after {
 .drawer-close:hover { background:var(--s2); color:var(--text); }
 .drawer-title { font-size:1rem; font-weight:600; line-height:1.4; }
 .drawer-desc { font-size:.75rem; color:var(--dim); margin-top:4px; line-height:1.5; white-space:pre-wrap; word-break:break-word; }
+[contenteditable] { outline:none; border-radius:6px; padding:3px 5px; margin:-3px -5px; transition:background .15s, box-shadow .15s; cursor:text; }
+[contenteditable]:hover { background:var(--s2); }
+[contenteditable]:focus { background:var(--s2); box-shadow:0 0 0 2px rgba(90,148,144,.25); }
+[contenteditable]:empty::before { content:attr(data-placeholder); color:var(--dim); opacity:.38; pointer-events:none; font-weight:400; }
 .drawer-meta { display:flex; gap:6px; margin-top:8px; }
 
 .comments-list { flex:1; overflow-y:auto; padding:14px 20px; display:flex; flex-direction:column; gap:10px; scrollbar-width:thin; scrollbar-color:var(--border2) transparent; }
@@ -1094,6 +1136,9 @@ header::after {
       <span class="ax-lbl al-right">不重要 →</span>
     </div>
 
+    <!-- PERSONAL LIST (personal mode only) -->
+    <div class="personal-list" id="personal-list"></div>
+
     <!-- COMPLETED -->
     <div class="completed-section" id="done-section">
       <div class="done-header" id="done-header">
@@ -1214,8 +1259,11 @@ header::after {
           </svg>
         </button>
       </div>
-      <div class="drawer-title" id="dtitle"></div>
-      <div class="drawer-desc" id="ddesc"></div>
+      <div class="drawer-title" id="dtitle" contenteditable="plaintext-only" data-placeholder="任務名稱"
+           onblur="saveDrawerField('text',this.textContent.trim())"
+           onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur()}"></div>
+      <div class="drawer-desc" id="ddesc" contenteditable="plaintext-only" data-placeholder="點此新增說明…"
+           onblur="saveDrawerField('desc',this.textContent.trim())"></div>
       <div class="drawer-meta" id="dmeta"></div>
     </div>
     <div class="comments-head">
@@ -1257,7 +1305,7 @@ header::after {
       </label>
       <input type="date" id="idue">
     </div>
-    <div class="field">
+    <div class="field field-quadrant">
       <label>選擇象限</label>
       <div class="qpicker">
         <div class="q-pick selected" data-q="1" onclick="pickQ(1)" style="--pc:var(--q1);--pbg:var(--q1bg)"><div class="dot"></div>緊急 ＆ 重要</div>
@@ -1357,6 +1405,7 @@ async function setViewMode(mode){
   if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer = null; }
   if(viewMode === 'personal') await savePersonalTasks();
   viewMode = mode;
+  document.body.classList.toggle('personal-mode', mode === 'personal');
   document.getElementById('mode-team-btn').classList.toggle('active', mode === 'team');
   document.getElementById('mode-personal-btn').classList.toggle('active', mode === 'personal');
   document.getElementById('mob-mode-team').classList.toggle('active', mode === 'team');
@@ -2104,12 +2153,45 @@ function dueBadge(due){
 function isOverdue(due){ return !!due && Math.round((new Date(due)-new Date(today()))/86400000)<0; }
 
 /* ─── RENDER ─── */
+function renderPersonalList(active, done){
+  const el = document.getElementById('personal-list');
+  const todayStr = new Date().toISOString().slice(0,10);
+  if(!active.length){
+    el.innerHTML = '<div class="personal-empty"><span style="font-size:1.5rem">📋</span>尚無個人任務</div>';
+  } else {
+    el.innerHTML = active.map(t => {
+      const overdue = t.due && t.due < todayStr;
+      const dueLabel = t.due ? `<div class="ptask-due${overdue?' overdue':''}">📅 ${t.due}${overdue?' · 逾期':''}</div>` : '';
+      return `<div class="ptask" id="ptask-${t.id}">
+        <div class="ptask-check" onclick="toggleDone(${t.id},event)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <div class="ptask-body" onclick="openDrawer(${t.id})">
+          <div class="ptask-text">${esc(t.text)}</div>
+          ${t.desc ? `<div class="ptask-due" style="margin-top:2px">${esc(t.desc.slice(0,60))}${t.desc.length>60?'…':''}</div>` : ''}
+          ${dueLabel}
+        </div>
+        <button class="ptask-del" onclick="delTask(${t.id},event)" title="刪除">✕</button>
+      </div>`;
+    }).join('');
+  }
+  // Completed section stays the same
+  document.getElementById('done-badge').textContent = done.length;
+}
+
 function render(){
   const active=tasks.filter(t=>!t.done);
   const done=tasks.filter(t=>t.done);
   document.getElementById('s-all').textContent=tasks.length;
   document.getElementById('s-done').textContent=done.length;
   document.getElementById('s-left').textContent=active.length;
+
+  if(viewMode === 'personal'){
+    renderPersonalList(active, done);
+    renderSugPanel(active);
+    renderDonePanel(done);
+    return;
+  }
 
   // Quadrants
   [1,2,3,4].forEach(q=>{
@@ -2283,6 +2365,86 @@ function render(){
   if(openTaskId!==null) renderDrawer(openTaskId);
 }
 
+function renderSugPanel(active){
+  const sorted=[...active].sort((a,b)=>{
+    const aOv=isOverdue(a.due), bOv=isOverdue(b.due);
+    if(aOv!==bOv) return aOv?-1:1;
+    if(a.q!==b.q) return a.q-b.q;
+    if(a.due&&b.due) return a.due.localeCompare(b.due);
+    if(a.due) return -1; if(b.due) return 1; return 0;
+  });
+  document.getElementById('sug-count').textContent=sorted.length;
+  const sl=document.getElementById('sug-list');
+  if(!sorted.length){
+    sl.innerHTML='<div class="sug-empty">🎉 目前沒有待辦任務<br><span style="font-size:.65rem;opacity:.7">新增任務開始排程</span></div>';
+  } else {
+    sl.innerHTML=sorted.map((t,i)=>{
+      const handlers = t.handlers || (t.handler ? [t.handler] : []);
+      const isMine = profile && handlers.some(h=>h.name===profile.name);
+      const handlersAvatars = handlers.length > 0
+        ? `<div class="sug-handlers-stack" title="${handlers.map(h=>esc(h.name)).join(', ')} 處理中">${handlers.slice(0,3).map(h=>`<div class="sug-handler-avatar">${avHTML(h.avatar,32,h.avatar_type)}</div>`).join('')}</div>${handlers.length>3?`<span class="handlers-more" style="margin-left:4px">+${handlers.length-3}</span>`:''}`
+        : `<div class="sug-handler-empty" title="尚未認領"></div>`;
+      return `<div class="sug-item" onclick="openDrawer(${t.id})" style="--ic:${COLORS[t.q]}">
+        <span class="sug-rank">${i+1}</span>
+        <div class="sug-body">
+          <div class="sug-text">${esc(t.text)}</div>
+          <div class="sug-tags">
+            ${isOverdue(t.due)?`<span class="sug-tag" style="background:rgba(184,114,106,.12);color:var(--q1);border-color:var(--q1gl)">⚠ 逾期</span>`:t.due?`<span class="sug-tag sug-duebadge" style="background:var(--s2);color:var(--dim);border-color:var(--border2)">📅 ${t.due}</span>`:''}
+          </div>
+        </div>
+        <div class="sug-right">
+          <button class="sug-done-btn" onclick="toggleDone(${t.id},event)" title="標記完成">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+}
+
+function renderDonePanel(done){
+  document.getElementById('done-badge').textContent=done.length;
+  const dl=document.getElementById('done-list');
+  if(!done.length){
+    dl.innerHTML='<div style="display:flex;align-items:center;color:var(--dim);font-size:.72rem;opacity:.4;padding:0 4px">尚無完成任務</div>';
+    return;
+  }
+  const now=new Date(), today=new Date(now.getFullYear(),now.getMonth(),now.getDate());
+  const dayOfWeek=today.getDay()||7;
+  const thisWeekStart=new Date(today); thisWeekStart.setDate(today.getDate()-dayOfWeek+1);
+  const lastWeekStart=new Date(thisWeekStart); lastWeekStart.setDate(thisWeekStart.getDate()-7);
+  const thisWeek=[],lastWeek=[],older=[];
+  done.forEach(t=>{
+    const d=t.doneAt?new Date(t.doneAt):new Date(t.id);
+    if(d>=thisWeekStart) thisWeek.push(t);
+    else if(d>=lastWeekStart) lastWeek.push(t);
+    else older.push(t);
+  });
+  const sortByDone=(a,b)=>(a.doneAt?new Date(a.doneAt).getTime():a.id)>(b.doneAt?new Date(b.doneAt).getTime():b.id)?-1:1;
+  [thisWeek,lastWeek,older].forEach(g=>g.sort(sortByDone));
+  const renderCard=(t,i)=>{
+    const cc=(t.comments||[]).length;
+    const doneDate=t.doneAt?t.doneAt.slice(0,10):'';
+    return `<div class="done-card">
+      <div class="done-card-top">
+        <span class="done-num">${i}.</span>
+        <div class="done-qdot" style="background:${COLORS[t.q]||COLORS[1]}"></div>
+        <span class="done-text">${esc(t.text)}</span>
+        ${doneDate?`<span class="done-date">${doneDate}</span>`:''}
+      </div>
+      <div class="done-card-bot">
+        <button class="done-btn" onclick="toggleDone(${t.id},event)">↩ 恢復</button>
+        <button class="done-del" onclick="delTask(${t.id},event)">✕</button>
+      </div>
+    </div>`;
+  };
+  let html='',idx=0;
+  if(thisWeek.length){ html+=`<div class="done-group-label">本週完成 (${thisWeek.length})</div>`; html+=thisWeek.map(t=>renderCard(t,++idx)).join(''); }
+  if(lastWeek.length){ html+=`<div class="done-group-label">上週完成 (${lastWeek.length})</div>`; html+=lastWeek.map(t=>renderCard(t,++idx)).join(''); }
+  if(older.length){ html+=`<div class="done-group-label">更早之前 (${older.length})</div>`; html+=older.map(t=>renderCard(t,++idx)).join(''); }
+  dl.innerHTML=html;
+}
+
 /* ─── CRUD ─── */
 function toggleDone(id,e){
   if(e)e.stopPropagation();
@@ -2371,9 +2533,7 @@ function openDrawer(id){
   document.getElementById('dqdot').style.background=COLORS[t.q];
   document.getElementById('dqname').textContent=QNAMES[t.q];
   document.getElementById('dtitle').textContent=t.text;
-  const dd=document.getElementById('ddesc');
-  if(t.desc){ dd.innerHTML=`<div class="drawer-desc-lbl">說明</div><div class="drawer-desc-block">${esc(t.desc)}</div>`; dd.style.display='block'; }
-  else { dd.style.display='none'; }
+  document.getElementById('ddesc').textContent=t.desc||'';
   // 顯示截止日期、handlers 和建立者
   const handlers = t.handlers || (t.handler ? [t.handler] : []);
   const handlersHTML = handlers.length > 0
@@ -2408,6 +2568,18 @@ function renderDrawer(id){
     </div>`).join('');
   el.scrollTop=el.scrollHeight;
 }
+function saveDrawerField(field, value){
+  if(openTaskId===null) return;
+  const t=tasks.find(t=>t.id===openTaskId); if(!t) return;
+  if(field==='text' && !value) return;
+  const prev = t[field] || null;
+  const next = value || null;
+  if(prev===next) return;
+  t[field]=next;
+  save();
+  render();
+}
+
 function closeDrawer(){ document.getElementById('dov').classList.remove('open'); openTaskId=null; }
 function addComment(){
   const inp=document.getElementById('cinp'), text=inp.value.trim();

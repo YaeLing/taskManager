@@ -434,45 +434,31 @@ header::after {
 /* ═══ RIGHT: QUADRANT + COMPLETED ═══ */
 .right-area {
   flex: 1; min-width: 0;
-  display: flex; flex-direction: column;
+  display: flex; flex-direction: row;
   min-height: 0;
 }
 
 /* ═══ QUADRANT MATRIX ═══ */
 .matrix {
-  flex: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  min-height: 0;
-  position: relative;
+  flex: 1; display: flex; flex-direction: column;
+  overflow-y: auto; min-height: 0; min-width: 0;
 }
-/* axis */
-.ax { position: absolute; pointer-events: none; z-index: 4; }
-.ax-h { left:0; right:0; top:50%; height:1px; background:var(--border2); transform:translateY(-50%); }
-.ax-v { top:0; bottom:0; left:50%; width:1px; background:var(--border2); transform:translateX(-50%); }
-.ax-lbl {
-  position:absolute; pointer-events:none; z-index:5;
-  font-family: var(--mono); font-size:.58rem; color:var(--dim); letter-spacing:.8px; text-transform:uppercase;
-  background:var(--bg); padding:2px 8px; border:1px solid var(--border2); border-radius:999px;
-}
-.al-top    { left:50%; top:6px;    transform:translateX(-50%); }
-.al-bottom { left:50%; bottom:6px; transform:translateX(-50%); }
-.al-left   { top:50%; left:8px;   transform:translateY(-50%); }
-.al-right  { top:50%; right:8px;  transform:translateY(-50%); }
+.ax, .ax-lbl { display: none; }
 
 .quadrant {
   padding: 10px; display: flex; flex-direction: column; gap: 7px;
-  overflow: hidden; position: relative;
-  border: 1px solid var(--border);
+  flex: 1;
+  border: none; border-left: 4px solid transparent;
+  border-bottom: 1px solid var(--border2);
   transition: filter .15s;
   cursor: default;
+  overflow: hidden;
 }
-.quadrant:nth-child(1){ background:var(--q1bg); border-right-color:transparent; border-bottom-color:transparent; }
-.quadrant:nth-child(2){ background:var(--q2bg); border-left-color:transparent;  border-bottom-color:transparent; }
-.quadrant:nth-child(3){ background:var(--q3bg); border-top-color:transparent;   border-right-color:transparent; }
-.quadrant:nth-child(4){ background:var(--q4bg); border-top-color:transparent;   border-left-color:transparent; }
-.quadrant.drag-over { filter: brightness(1.25); }
+.quadrant:nth-child(1){ background:var(--q1bg); border-left-color:var(--q1); }
+.quadrant:nth-child(2){ background:var(--q2bg); border-left-color:var(--q2); }
+.quadrant:nth-child(3){ background:var(--q3bg); border-left-color:var(--q3); }
+.quadrant:nth-child(4){ background:var(--q4bg); border-left-color:var(--q4); border-bottom:none; }
+.quadrant.drag-over { filter: brightness(1.08); }
 
 .q-header { display:flex; align-items:center; gap:7px; flex-shrink:0; }
 .q-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; box-shadow:0 0 6px var(--c); }
@@ -579,37 +565,33 @@ body.personal-mode .sug-sub { display: none; }
 .personal-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--dim); font-size: .8rem; gap: 8px; opacity: .6; }
 
 .completed-section {
-  grid-column: 2; grid-row: 2;
+  flex: 1; min-width: 140px;
   background: var(--panel);
-  border-top: 1px solid var(--border2);
-  max-height: 160px;
   display: flex; flex-direction: column;
-  transition: max-height .3s ease;
-  flex-shrink: 0;
+  overflow: hidden;
 }
-.completed-section.collapsed { max-height: 40px; }
+.col-resizer--done {
+  cursor: col-resize; flex-direction: row;
+  border-left: 1px solid var(--border2);
+}
 
 .done-header {
-  display:flex; align-items:center; gap:9px; padding:9px 16px;
-  cursor:pointer; flex-shrink:0; user-select:none; border-bottom:1px solid transparent;
+  display:flex; align-items:center; gap:9px; padding:9px 12px;
+  flex-shrink:0; border-bottom:1px solid var(--border);
 }
-.done-header:hover { background:rgba(255,255,255,.02); }
-.completed-section:not(.collapsed) .done-header { border-bottom-color:var(--border); }
 .done-dot { width:7px; height:7px; border-radius:50%; background:var(--done); }
 .done-title { font-size:.75rem; font-weight:700; color:var(--done); }
 .done-badge { font-family:var(--mono); font-size:.65rem; font-weight:700; padding:1px 7px; border-radius:999px; background:rgba(74,85,104,.15); color:var(--done); border:1px solid rgba(74,85,104,.25); }
-.done-chevron { margin-left:auto; color:var(--dim); transition:transform .3s; display:flex; align-items:center; }
-.completed-section.collapsed .done-chevron { transform:rotate(180deg); }
 
 .done-tasks {
-  flex:1; overflow-x:auto; overflow-y:hidden;
-  display:flex; gap:8px; padding:8px 16px;
+  flex:1; overflow-y:auto; overflow-x:hidden;
+  display:flex; flex-direction:column; gap:6px; padding:8px 10px;
   scrollbar-width:thin; scrollbar-color:var(--border2) transparent;
 }
 .done-tasks.drag-over { outline:2px dashed var(--done); outline-offset:-3px; border-radius:6px; background:rgba(74,85,104,.05); }
 
 .done-card {
-  flex-shrink:0; width:200px;
+  flex-shrink:0; width:auto;
   background:var(--s2); border:1px solid var(--border2); border-radius:8px;
   padding:8px 11px; display:flex; flex-direction:column; gap:5px; animation:pop .15s ease;
 }
@@ -887,38 +869,21 @@ body.personal-mode .sug-sub { display: none; }
   .sug-list { max-height:none; flex:1; }
 
   /* Quadrant */
-  .right-area { display:none; flex:none; }
+  .right-area { display:none; flex:none; flex-direction:column; }
   .right-area.mob-show { display:flex; }
-  /* 手機版象限：直式一欄排列 */
-  .matrix {
-    display: flex; flex-direction: column;
-    height: auto; overflow-y: auto; gap: 0;
-  }
-  .matrix .ax, .matrix .ax-lbl { display: none; }
-  .quadrant {
-    min-height: auto; border-radius: 0;
-    border-left: none; border-right: none;
-    border-color: var(--border2) !important;
-    border-top: none;
-  }
-  .quadrant:first-child { border-top: none; }
-  .quadrant:nth-child(1){ border-left: 4px solid var(--q1) !important; }
-  .quadrant:nth-child(2){ border-left: 4px solid var(--q2) !important; }
-  .quadrant:nth-child(3){ border-left: 4px solid var(--q3) !important; }
-  .quadrant:nth-child(4){ border-left: 4px solid var(--q4) !important; }
+  .matrix { height: auto; }
   .q-tasks { max-height: 280px; overflow-y: auto; }
 
   /* Completed */
-  .completed-section { display:none; grid-column:auto; grid-row:auto; max-height:none; }
-  .completed-section.collapsed { max-height:44px; }
+  .completed-section { display:none; width:auto; border-left:none; border-top:1px solid var(--border2); max-height:none; flex-shrink:0; }
+  .col-resizer--done { display:none; }
   .done-tasks { flex-direction:column; overflow-x:hidden; overflow-y:auto; max-height:70svh; }
-  .done-card { width:auto; }
   .done-group-label { width:100%; margin-top:8px; }
   .done-group-label:first-child { margin-top:0; }
   /* 手機版 done tab：讓 right-area 顯示但只露出 completed-section */
   .right-area.mob-show-done { display:flex; }
   .right-area.mob-show-done .matrix { display:none; }
-  .right-area.mob-show-done .completed-section { display:flex; }
+  .right-area.mob-show-done .completed-section { display:flex; width:100%; max-height:none; }
 
   /* Chat panel */
   .chat-panel { display:none; border-left:none; border-top:1px solid var(--border2); width:100%; }
@@ -1140,16 +1105,12 @@ body.personal-mode .sug-sub { display: none; }
     <div class="personal-list" id="personal-list"></div>
 
     <!-- COMPLETED -->
+    <div class="col-resizer col-resizer--done" id="resizer-done"></div>
     <div class="completed-section" id="done-section">
       <div class="done-header" id="done-header">
         <div class="done-dot"></div>
         <span class="done-title">已完成</span>
         <span class="done-badge" id="done-badge">0</span>
-        <div class="done-chevron">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <polyline points="18 15 12 9 6 15"/>
-          </svg>
-        </div>
       </div>
       <div class="done-tasks" id="done-list"
            ondragover="onDoneDragOver(event)" ondrop="onDoneDrop(event)" ondragleave="document.getElementById('done-list').classList.remove('drag-over')">
@@ -1746,12 +1707,26 @@ function renderLeaves(){
 let _todayLeaveShown = false;
 function checkTodayLeaves(){
   if(_todayLeaveShown) return;
-  const today = new Date().toISOString().slice(0,10);
+  const now = new Date();
+  const today = now.toISOString().slice(0,10);
   const todayLeaves = leaveData.filter(l => l.date <= today && today <= (l.endDate || l.date));
   if(!todayLeaves.length) return;
-  _todayLeaveShown = true;
-  // 延遲 1.5 秒，讓頁面完全載入後再顯示
-  setTimeout(() => showLeaveAlert(todayLeaves), 1500);
+
+  const nine = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0);
+  const msUntilNine = nine - now;
+
+  if(msUntilNine > 0){
+    // 還沒到 9 點，排程在 9:00 顯示
+    setTimeout(() => {
+      if(_todayLeaveShown) return;
+      _todayLeaveShown = true;
+      showLeaveAlert(todayLeaves);
+    }, msUntilNine);
+  } else {
+    // 已過 9 點，立即顯示（延遲 1.5 秒讓頁面載入完）
+    _todayLeaveShown = true;
+    setTimeout(() => showLeaveAlert(todayLeaves), 1500);
+  }
 }
 
 function showLeaveAlert(leaves){
@@ -2612,7 +2587,6 @@ function onDrop(e,q){
 }
 function onDoneDragOver(e){
   e.preventDefault(); e.dataTransfer.dropEffect='move';
-  if(!doneOpen){doneOpen=true;document.getElementById('done-section').classList.remove('collapsed');}
   document.getElementById('done-list').classList.add('drag-over');
 }
 function onDoneDrop(e){
@@ -2662,11 +2636,6 @@ function logHistory(action, task, detail=''){
     body:JSON.stringify(entry)
   }).catch(()=>{});
 }
-
-document.getElementById('done-header').onclick = function(){
-  doneOpen=!doneOpen;
-  document.getElementById('done-section').classList.toggle('collapsed',!doneOpen);
-};
 
 /* ─── ROCKET CELEBRATION ─── */
 function showRocketCelebration(voter, totalRockets, taskText){
@@ -3039,6 +3008,35 @@ function initResizers(){
   makeResizer('resizer-left',  () => sug,  dx =>  dx);
   // 右 resizer：拖左 → 右欄變寬
   makeResizer('resizer-right', () => chat, dx => -dx);
+  // done resizer：拖左 → 已完成欄變寬
+  const done = document.querySelector('.completed-section');
+  const savedDone = localStorage.getItem('col_done_w');
+  if(savedDone){ done.style.flex = 'none'; done.style.width = savedDone + 'px'; }
+  const doneHandle = document.getElementById('resizer-done');
+  if(doneHandle) {
+    doneHandle.addEventListener('mousedown', e => {
+      e.preventDefault();
+      const startX = e.clientX, startW = done.offsetWidth;
+      doneHandle.classList.add('active');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      function onMove(e){
+        const nw = Math.max(140, Math.min(500, startW - (e.clientX - startX)));
+        done.style.flex = 'none';
+        done.style.width = nw + 'px';
+      }
+      function onUp(){
+        doneHandle.classList.remove('active');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        localStorage.setItem('col_done_w', parseInt(done.style.width));
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
 }
 
 window.addEventListener('resize', ()=>{

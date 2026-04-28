@@ -968,7 +968,8 @@ body.personal-mode .sug-sub { display: none; }
       <div class="upload-hint">支援 PNG、JPG、GIF、WebP（建議 200x200 以上）</div>
     </div>
     <div class="setup-section-lbl">您的姓名</div>
-    <input type="text" class="setup-name-inp" id="setup-name" placeholder="輸入您的姓名…" maxlength="20" autocomplete="off">
+    <input type="text" class="setup-name-inp" id="setup-name" placeholder="輸入您的姓名…" maxlength="20" autocomplete="off" oninput="onSetupNameInput(this.value)">
+    <div id="setup-name-hint" style="font-size:.72rem;color:var(--acc);margin:-14px 0 10px;min-height:18px;text-align:center"></div>
     <button class="btn-setup" id="btn-setup-save" onclick="saveProfile()">開始使用</button>
   </div>
 </div>
@@ -1424,6 +1425,37 @@ async function initProfile(){
     applyProfile();
     render();
   }
+}
+
+let _nameCheckTimer = null;
+async function onSetupNameInput(val){
+  const hint = document.getElementById('setup-name-hint');
+  clearTimeout(_nameCheckTimer);
+  const name = val.trim();
+  if(!name){ hint.textContent = ''; return; }
+  _nameCheckTimer = setTimeout(async () => {
+    try {
+      const res = await fetch('/api/users');
+      const users = await res.json();
+      const match = Object.values(users).find(u => u.name === name);
+      if(match){
+        hint.textContent = '✓ 找到既有紀錄，已自動帶入頭像';
+        selAvType = match.avatar_type || 'emoji';
+        if(selAvType === 'custom'){
+          customAvUrl = match.avatar;
+          selAv = match.avatar;
+        } else {
+          selAv = match.avatar;
+          customAvUrl = null;
+        }
+        buildAvGrid();
+        resetUploadBtn();
+        updateSetupPreview();
+      } else {
+        hint.textContent = '';
+      }
+    } catch(e){ hint.textContent = ''; }
+  }, 400);
 }
 
 function showSetup(editing){

@@ -1404,6 +1404,18 @@ async function savePersonalTasks(){
 async function initProfile(){
   profile = JSON.parse(localStorage.getItem('user_profile')||'null');
   initTeamName();
+  // 如果 localStorage 沒有 profile，嘗試從 server 用 IP 還原
+  if(!profile){
+    try {
+      const res = await fetch('/api/users');
+      const users = await res.json();
+      const ip = await fetch('/api/ip').then(r=>r.json()).then(d=>d.ip).catch(()=>null);
+      if(ip && users[ip]){
+        profile = { name: users[ip].name, avatar: users[ip].avatar, avatar_type: users[ip].avatar_type || 'emoji' };
+        localStorage.setItem('user_profile', JSON.stringify(profile));
+      }
+    } catch(e){}
+  }
   // Load tasks, chat, points, and leaves from server
   await Promise.all([loadTasks(), loadChat(), loadPoints(), loadLeaves()]);
   if(!profile){

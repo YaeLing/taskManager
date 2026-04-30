@@ -12,6 +12,7 @@ CHAT_FILE = SERVE_DIR / 'chat.json'
 POINTS_FILE = SERVE_DIR / 'points.json'
 LEAVES_FILE = SERVE_DIR / 'leaves.json'
 PERSONAL_TASKS_FILE = SERVE_DIR / 'personal_tasks.json'
+QUICK_CMDS_FILE = SERVE_DIR / 'quick_cmds.json'
 AVATARS_DIR = SERVE_DIR / 'avatars'
 _tasks_lock = threading.Lock()
 _users_lock = threading.Lock()
@@ -19,6 +20,7 @@ _chat_lock = threading.Lock()
 _points_lock = threading.Lock()
 _leaves_lock = threading.Lock()
 _personal_tasks_lock = threading.Lock()
+_quick_cmds_lock = threading.Lock()
 
 def load_leaves():
     if LEAVES_FILE.exists():
@@ -34,6 +36,18 @@ def load_leaves():
 def save_leaves(leaves):
     with _leaves_lock:
         LEAVES_FILE.write_text(json.dumps(leaves, ensure_ascii=False, indent=2), encoding='utf-8')
+
+def load_quick_cmds():
+    if QUICK_CMDS_FILE.exists():
+        try:
+            return json.loads(QUICK_CMDS_FILE.read_text(encoding='utf-8'))
+        except:
+            pass
+    return []
+
+def save_quick_cmds(cmds):
+    with _quick_cmds_lock:
+        QUICK_CMDS_FILE.write_text(json.dumps(cmds, ensure_ascii=False, indent=2), encoding='utf-8')
 
 def load_personal_tasks():
     if PERSONAL_TASKS_FILE.exists():
@@ -223,6 +237,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(data)
             else:
                 self.send_error(404)
+
+        elif self.path == '/api/quick-cmds':
+            cmds = load_quick_cmds()
+            body = json.dumps(cmds, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", len(body))
+            self.end_headers()
+            self.wfile.write(body)
 
         elif self.path == '/api/events':
             self.send_response(200)
@@ -557,6 +580,26 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 data = load_personal_tasks()
                 data[name] = req.get('tasks', [])
                 save_personal_tasks(data)
+                resp = b'{"ok":true}'
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(resp))
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_error(400, str(e))
+
+        elif self.path == '/api/quick-cmds':
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                cmds = json.loads(body)
+                save_quick_cmds(cmds)
+                _broadcast(json.dumps({
+                    'type': 'quick_cmds_update',
+                    'cmds': cmds,
+                    'from_ip': self.client_address[0]
+                }, ensure_ascii=False))
                 resp = b'{"ok":true}'
                 self.send_response(200)
                 self.send_header('Content-Type', 'application/json')

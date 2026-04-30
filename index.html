@@ -111,6 +111,111 @@ header::after {
 .h-add:hover { opacity: .88; }
 .h-add:active { transform: scale(.96); }
 
+.h-done-btn {
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 6px 14px; color: var(--dim); font-size: .8rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all .2s; font-family: inherit; background: transparent;
+  white-space: nowrap;
+}
+.h-done-btn:hover { border-color: var(--done); color: var(--done); background: rgba(154,144,128,.08); }
+.h-done-btn.active { border-color: var(--done); color: var(--done); background: rgba(154,144,128,.12); }
+
+.h-qcmd-btn {
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 6px 14px; color: var(--dim); font-size: .8rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all .2s; font-family: inherit; background: transparent;
+  white-space: nowrap;
+}
+.h-qcmd-btn:hover { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.08); }
+.h-qcmd-btn.active { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.12); }
+
+/* ═══ QUICK COMMANDS PANEL ═══ */
+.qcmd-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(40,30,20,.18); backdrop-filter: blur(2px);
+}
+.qcmd-panel {
+  position: fixed; top: 60px; right: 20px; z-index: 201;
+  width: 340px; max-height: calc(100vh - 80px);
+  background: var(--panel); border: 1px solid var(--border2);
+  border-radius: 14px; box-shadow: 0 8px 32px rgba(40,30,20,.18);
+  display: flex; flex-direction: column; overflow: hidden;
+  animation: modalIn .18s ease;
+}
+.qcmd-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 14px 16px 12px; border-bottom: 1px solid var(--border2);
+  flex-shrink: 0;
+}
+.qcmd-head h3 { font-size: .9rem; font-weight: 700; color: var(--text); flex: 1; margin: 0; }
+.qcmd-edit-btn {
+  font-size: .7rem; font-weight: 600; padding: 4px 10px;
+  border-radius: 999px; border: 1px solid var(--border2); color: var(--dim);
+  background: transparent; cursor: pointer; font-family: inherit; transition: all .15s;
+}
+.qcmd-edit-btn:hover { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.08); }
+.qcmd-edit-btn.editing { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.1); }
+.qcmd-close {
+  background: transparent; border: none; cursor: pointer; color: var(--dim);
+  display: flex; padding: 4px; border-radius: 6px; transition: color .15s;
+}
+.qcmd-close:hover { color: var(--text); background: var(--s2); }
+.qcmd-list {
+  flex: 1; overflow-y: auto; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 6px;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+}
+.qcmd-empty {
+  text-align: center; color: var(--dim); font-size: .78rem; padding: 24px 12px; opacity: .6;
+}
+.qcmd-item {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 12px; border-radius: 10px;
+  background: var(--s2); border: 1px solid var(--border2);
+  cursor: pointer; transition: all .15s;
+}
+.qcmd-item:hover { border-color: var(--acc); background: rgba(90,148,144,.07); }
+.qcmd-item-body { flex: 1; min-width: 0; }
+.qcmd-item-label { font-size: .8rem; font-weight: 600; color: var(--text); line-height: 1.3; }
+.qcmd-item-cmd { font-size: .72rem; color: var(--dim); font-family: var(--mono); margin-top: 2px; word-break: break-all; }
+.qcmd-item-del {
+  background: none; border: none; cursor: pointer; color: transparent;
+  font-size: .75rem; padding: 2px 5px; border-radius: 5px; transition: color .15s; flex-shrink: 0;
+}
+.qcmd-item:hover .qcmd-item-del { color: var(--dim); }
+.qcmd-item-del:hover { color: var(--q1) !important; }
+.qcmd-item-drag { color: transparent; cursor: grab; font-size: .8rem; padding: 2px 3px; flex-shrink: 0; transition: color .15s; }
+.qcmd-item:hover .qcmd-item-drag { color: var(--dim); }
+
+.qcmd-add-row {
+  padding: 10px 12px; border-top: 1px solid var(--border2); flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.qcmd-add-row input, .qcmd-add-row textarea {
+  width: 100%; border: 1px solid var(--border2); border-radius: 8px;
+  padding: 7px 10px; font-size: .78rem; font-family: inherit;
+  background: var(--bg); color: var(--text); resize: none;
+}
+.qcmd-add-row input:focus, .qcmd-add-row textarea:focus { outline: none; border-color: var(--acc); }
+.qcmd-add-submit {
+  width: 100%; padding: 7px; border-radius: 8px;
+  background: var(--acc); border: none; color: #fff;
+  font-size: .78rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: opacity .15s;
+}
+.qcmd-add-submit:hover { opacity: .85; }
+
+/* copy toast */
+.copy-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--text); color: var(--bg); font-size: .78rem; font-weight: 600;
+  padding: 8px 18px; border-radius: 999px; z-index: 9999;
+  animation: toastIn .2s ease; pointer-events: none;
+}
+@keyframes toastIn { from{opacity:0;transform:translateX(-50%) translateY(8px)} to{opacity:1;transform:translateX(-50%)} }
+
 /* ═══ MAIN LAYOUT ═══ */
 .layout {
   flex: 1; display: flex; flex-direction: row;
@@ -459,6 +564,32 @@ header::after {
 .quadrant:nth-child(3){ background:var(--q3bg); border-left-color:var(--q3); }
 .quadrant:nth-child(4){ background:var(--q4bg); border-left-color:var(--q4); border-bottom:none; }
 .quadrant.drag-over { filter: brightness(1.08); }
+
+/* ─── 2×2 grid mode (when done panel hidden) ─── */
+.matrix.grid-mode {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  overflow: hidden;
+  position: relative;
+}
+.matrix.grid-mode #q1 { grid-column:1; grid-row:1; border-bottom:1px solid var(--border2); border-right:1px solid var(--border2); }
+.matrix.grid-mode #q2 { grid-column:1; grid-row:2; border-bottom:none; border-right:1px solid var(--border2); }
+.matrix.grid-mode #q3 { grid-column:2; grid-row:1; border-bottom:1px solid var(--border2); }
+.matrix.grid-mode #q4 { grid-column:2; grid-row:2; border-bottom:none; }
+.matrix.grid-mode .ax, .matrix.grid-mode .ax-lbl {
+  display:block; position:absolute; pointer-events:none; z-index:2;
+}
+.matrix.grid-mode .ax-h { left:0; right:0; top:50%; height:1px; background:var(--border2); transform:none; }
+.matrix.grid-mode .ax-v { top:0; bottom:0; left:50%; width:1px; background:var(--border2); }
+.matrix.grid-mode .ax-lbl {
+  font-size:.6rem; font-weight:600; color:var(--dim); opacity:.7;
+  background:var(--panel); padding:1px 5px; border-radius:4px;
+}
+.matrix.grid-mode .al-top    { top:6px;    left:50%; transform:translateX(-50%); }
+.matrix.grid-mode .al-bottom { bottom:6px; left:50%; transform:translateX(-50%); }
+.matrix.grid-mode .al-left   { left:6px;   top:50%;  transform:translateY(-50%); }
+.matrix.grid-mode .al-right  { right:6px;  top:50%;  transform:translateY(-50%); }
 
 .q-header { display:flex; align-items:center; gap:7px; flex-shrink:0; }
 .q-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; box-shadow:0 0 6px var(--c); }
@@ -825,8 +956,13 @@ body.personal-mode .sug-sub { display: none; }
   .user-name-lbl { max-width:70px; }
   .h-add span { display:none; }
   .h-add { padding:7px 10px; }
+  .h-done-btn span { display:none; }
+  .h-done-btn { padding:6px 10px; }
+  .h-qcmd-btn span { display:none; }
+  .h-qcmd-btn { padding:6px 10px; }
   .team-name-btn { display:none; }
   .mode-toggle { display:none; }
+  .qcmd-panel { right: 8px; width: calc(100vw - 16px); }
 
   /* Mobile mode bar */
   .mob-mode-bar {
@@ -1000,6 +1136,19 @@ body.personal-mode .sug-sub { display: none; }
     <div class="user-av" id="h-user-av"></div>
     <span class="user-name-lbl" id="h-user-name">---</span>
   </div>
+  <button class="h-qcmd-btn" id="h-qcmd-btn" onclick="toggleQcmdPanel()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+    </svg>
+    <span>常用指令</span>
+  </button>
+  <div class="h-divider"></div>
+  <button class="h-done-btn" id="h-done-btn" onclick="toggleDonePanel()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <polyline points="20 6 9 17 4 12"/>
+    </svg>
+    <span>已完成</span>
+  </button>
   <button class="h-add" onclick="openModal()">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -1096,10 +1245,10 @@ body.personal-mode .sug-sub { display: none; }
       <!-- Axis -->
       <div class="ax ax-h"></div>
       <div class="ax ax-v"></div>
-      <span class="ax-lbl al-top">緊急 ↑</span>
-      <span class="ax-lbl al-bottom">↓ 不緊急</span>
-      <span class="ax-lbl al-left">←重要</span>
-      <span class="ax-lbl al-right">不重要 →</span>
+      <span class="ax-lbl al-top">重要 ↑</span>
+      <span class="ax-lbl al-bottom">↓ 不重要</span>
+      <span class="ax-lbl al-left">← 緊急</span>
+      <span class="ax-lbl al-right">不緊急 →</span>
     </div>
 
     <!-- PERSONAL LIST (personal mode only) -->
@@ -1417,8 +1566,8 @@ async function initProfile(){
       }
     } catch(e){}
   }
-  // Load tasks, chat, points, and leaves from server
-  await Promise.all([loadTasks(), loadChat(), loadPoints(), loadLeaves()]);
+  // Load tasks, chat, points, leaves, and quick commands from server
+  await Promise.all([loadTasks(), loadChat(), loadPoints(), loadLeaves(), loadQuickCmds()]);
   if(!profile){
     showSetup(false);
   } else {
@@ -2924,6 +3073,16 @@ function connectSSE(){
         return;
       }
 
+      // Handle quick commands update
+      if(entry.type === 'quick_cmds_update'){
+        const isSelf = entry.from_ip === myIP;
+        if(!isSelf){
+          quickCmds = entry.cmds || [];
+          if(qcmdPanelOpen) renderQcmdList();
+        }
+        return;
+      }
+
       // Handle history notifications
       const isSelf = entry.ip === myIP;
       if(isSelf) return; // 自己的操作不通知
@@ -3092,9 +3251,158 @@ window.addEventListener('resize', ()=>{
 
 initResizers();
 setTimeout(requestNotifPermission, 1500);
+
+/* ─── DONE PANEL TOGGLE ─── */
+let doneVisible = true;
+function toggleDonePanel(){
+  const section = document.getElementById('done-section');
+  const resizer = document.getElementById('resizer-done');
+  const btn = document.getElementById('h-done-btn');
+  const matrix = document.querySelector('.matrix');
+  doneVisible = !doneVisible;
+  section.style.display = doneVisible ? '' : 'none';
+  if(resizer) resizer.style.display = doneVisible ? '' : 'none';
+  btn.classList.toggle('active', doneVisible);
+  if(matrix) matrix.classList.toggle('grid-mode', !doneVisible);
+}
+
+/* ─── QUICK COMMANDS ─── */
+let quickCmds = [];
+let qcmdPanelOpen = false;
+let qcmdEditing = false;
+
+async function loadQuickCmds(){
+  try {
+    const res = await fetch('/api/quick-cmds');
+    if(res.ok) quickCmds = await res.json();
+  } catch(e){ console.error('Failed to load quick cmds:', e); }
+}
+
+async function saveQuickCmds(){
+  try {
+    await fetch('/api/quick-cmds', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(quickCmds)
+    });
+  } catch(e){ console.error('Failed to save quick cmds:', e); }
+}
+
+function renderQcmdList(){
+  const list = document.getElementById('qcmd-list');
+  if(!quickCmds.length){
+    list.innerHTML = '<div class="qcmd-empty">尚無常用指令<br>點擊「編輯」新增</div>';
+    return;
+  }
+  list.innerHTML = quickCmds.map((c,i)=>`
+    <div class="qcmd-item" onclick="copyQcmd(${i},event)">
+      ${qcmdEditing ? `<span class="qcmd-item-drag" title="拖曳排序">⠿</span>` : ''}
+      <div class="qcmd-item-body">
+        <div class="qcmd-item-label">${escHtml(c.label)}</div>
+        <div class="qcmd-item-cmd">${escHtml(c.cmd)}</div>
+      </div>
+      ${qcmdEditing ? `<button class="qcmd-item-del" onclick="delQuickCmd(${i},event)" title="刪除">✕</button>` : ''}
+    </div>
+  `).join('');
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleQcmdPanel(){
+  qcmdPanelOpen = !qcmdPanelOpen;
+  document.getElementById('qcmd-overlay').style.display = qcmdPanelOpen ? '' : 'none';
+  document.getElementById('qcmd-panel').style.display = qcmdPanelOpen ? '' : 'none';
+  document.getElementById('h-qcmd-btn').classList.toggle('active', qcmdPanelOpen);
+  if(qcmdPanelOpen) renderQcmdList();
+}
+
+function closeQcmdPanel(){
+  qcmdPanelOpen = false;
+  qcmdEditing = false;
+  document.getElementById('qcmd-overlay').style.display = 'none';
+  document.getElementById('qcmd-panel').style.display = 'none';
+  document.getElementById('h-qcmd-btn').classList.remove('active');
+  document.getElementById('qcmd-edit-btn').classList.remove('editing');
+  document.getElementById('qcmd-edit-btn').textContent = '編輯';
+  document.getElementById('qcmd-add-row').style.display = 'none';
+}
+
+function toggleQcmdEdit(){
+  qcmdEditing = !qcmdEditing;
+  const btn = document.getElementById('qcmd-edit-btn');
+  btn.classList.toggle('editing', qcmdEditing);
+  btn.textContent = qcmdEditing ? '完成' : '編輯';
+  document.getElementById('qcmd-add-row').style.display = qcmdEditing ? '' : 'none';
+  if(qcmdEditing){
+    document.getElementById('qcmd-add-label').value = '';
+    document.getElementById('qcmd-add-cmd').value = '';
+  }
+  renderQcmdList();
+}
+
+async function addQuickCmd(){
+  const label = document.getElementById('qcmd-add-label').value.trim();
+  const cmd   = document.getElementById('qcmd-add-cmd').value.trim();
+  if(!label || !cmd) return;
+  quickCmds.push({label, cmd});
+  renderQcmdList();
+  document.getElementById('qcmd-add-label').value = '';
+  document.getElementById('qcmd-add-cmd').value = '';
+  await saveQuickCmds();
+}
+
+async function delQuickCmd(i, e){
+  if(e) e.stopPropagation();
+  quickCmds.splice(i,1);
+  renderQcmdList();
+  await saveQuickCmds();
+}
+
+function copyQcmd(i, e){
+  if(qcmdEditing) return;
+  const cmd = quickCmds[i].cmd;
+  navigator.clipboard.writeText(cmd).then(()=>{
+    showCopyToast('已複製到剪貼簿');
+  }).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = cmd; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy'); document.body.removeChild(ta);
+    showCopyToast('已複製到剪貼簿');
+  });
+}
+
+function showCopyToast(msg){
+  const existing = document.querySelector('.copy-toast');
+  if(existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'copy-toast'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(), 1800);
+}
 </script>
 
 <!-- Notification Container -->
 <div class="notif-container" id="notif-container"></div>
+
+<!-- QUICK COMMANDS PANEL -->
+<div class="qcmd-overlay" id="qcmd-overlay" onclick="closeQcmdPanel()" style="display:none"></div>
+<div class="qcmd-panel" id="qcmd-panel" style="display:none">
+  <div class="qcmd-head">
+    <h3>⚡ 常用指令</h3>
+    <button class="qcmd-edit-btn" id="qcmd-edit-btn" onclick="toggleQcmdEdit()">編輯</button>
+    <button class="qcmd-close" onclick="closeQcmdPanel()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+  <div class="qcmd-list" id="qcmd-list"></div>
+  <div class="qcmd-add-row" id="qcmd-add-row" style="display:none">
+    <input id="qcmd-add-label" placeholder="名稱（例：重新啟動服務）" maxlength="60">
+    <textarea id="qcmd-add-cmd" rows="2" placeholder="指令內容（例：sudo systemctl restart app）"></textarea>
+    <button class="qcmd-add-submit" onclick="addQuickCmd()">+ 新增</button>
+  </div>
+</div>
 </body>
 </html>

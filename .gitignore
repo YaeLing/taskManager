@@ -6,10 +6,8 @@ server.log
 points.json
 leaves.json
 personal_tasks.json
+quick_cmds.json
 history/
-avatars/
-
-# User uploaded avatars
 avatars/
 
 # Python

@@ -787,7 +787,12 @@ body.personal-mode .sug-sub { display: none; }
 .comment-ip { font-family:var(--mono); font-size:.68rem; font-weight:600; background:var(--s2); border:1px solid var(--border2); border-radius:999px; padding:2px 9px; color:var(--acc); }
 .comment-time { font-family:var(--mono); font-size:.62rem; color:var(--dim); }
 .comment-text { background:var(--s2); border:1px solid var(--border2); border-radius:9px; border-top-left-radius:3px; padding:9px 12px; font-size:.9rem; line-height:1.55; word-break:break-word; }
-.comment-del { align-self:flex-end; background:transparent; border:none; font-size:.62rem; color:transparent; cursor:pointer; transition:color .15s; font-family:inherit; }
+.comment-foot { display:flex; align-items:center; justify-content:space-between; margin-top:2px; }
+.comment-like { background:none; border:none; cursor:pointer; color:var(--dim); font-size:.7rem; display:flex; align-items:center; gap:4px; border-radius:6px; padding:2px 6px; transition:all .15s; font-family:inherit; }
+.comment-like:hover { color:#e07070; background:rgba(224,112,112,.1); }
+.comment-like.liked { color:#e07070; }
+.comment-like.liked svg { fill:#e07070; stroke:#e07070; }
+.comment-del { background:transparent; border:none; font-size:.62rem; color:transparent; cursor:pointer; transition:color .15s; font-family:inherit; }
 .comment-item:hover .comment-del { color:var(--dim); }
 .comment-del:hover { color:var(--q1) !important; }
 .comment-input-wrap { padding:12px 20px; border-top:1px solid var(--border); display:flex; gap:9px; align-items:flex-end; flex-shrink:0; }
@@ -2740,8 +2745,11 @@ function renderDrawer(id){
   const countEl=document.getElementById('clist-count');
   if(countEl) countEl.textContent=`${list.length} 則`;
   if(!list.length){el.innerHTML='<div class="no-comments">還沒有留言，成為第一個！</div>';return;}
-  el.innerHTML=list.map((c,i)=>`
-    <div class="comment-item">
+  el.innerHTML=list.map((c,i)=>{
+    const likes=c.likes||[];
+    const liked=likes.some(l=>(profile?.name&&l.name===profile.name)||l.ip===myIP);
+    const lcount=likes.length;
+    return `<div class="comment-item">
       <div class="comment-meta">
         <div class="comment-user-av">${(()=>{const av=(profile&&c.name===profile.name)?profile.avatar:c.avatar;const avt=(profile&&c.name===profile.name)?profile.avatar_type:c.avatar_type;return av?avHTML(av,28,avt):'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>';})()}</div>
         <div class="comment-user-info">
@@ -2751,8 +2759,15 @@ function renderDrawer(id){
         </div>
       </div>
       <div class="comment-text">${esc(c.text)}</div>
-      <button class="comment-del" onclick="delComment(${id},${i})">刪除留言</button>
-    </div>`).join('');
+      <div class="comment-foot">
+        <button class="comment-like${liked?' liked':''}" onclick="likeComment(${id},${i})">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          ${lcount>0?lcount:''}
+        </button>
+        <button class="comment-del" onclick="delComment(${id},${i})">刪除留言</button>
+      </div>
+    </div>`;
+  }).join('');
   el.scrollTop=el.scrollHeight;
 }
 function saveDrawerField(field, value){
@@ -2784,6 +2799,21 @@ function delComment(tid,idx){
     logHistory('刪除留言', t, c?`${c.name||c.ip}：${String(c.text).slice(0,40)}`:'');
     t.comments.splice(idx,1); save(); render();
   }
+}
+
+function likeComment(tid, idx){
+  const t=tasks.find(t=>t.id===tid); if(!t) return;
+  const c=t.comments[idx]; if(!c) return;
+  if(!c.likes) c.likes=[];
+  const me=profile?.name||myIP;
+  const existing=c.likes.findIndex(l=>(profile?.name&&l.name===profile.name)||l.ip===myIP);
+  if(existing>=0) c.likes.splice(existing,1);
+  else c.likes.push({name:me, ip:myIP});
+  save();
+  const el=document.getElementById('clist');
+  const pos=el?el.scrollTop:0;
+  renderDrawer(tid);
+  if(el) el.scrollTop=pos;
 }
 
 /* ─── DRAG & DROP ─── */

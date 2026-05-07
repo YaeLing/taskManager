@@ -39,7 +39,7 @@ http://<主機IP>:8080
 - 四象限矩陣（Q1 緊急重要 → Q4 不緊急不重要）
 - 拖放移動象限、截止日期、逾期標記
 - 任務詳情側欄：inline 編輯標題 / 說明、留言討論、愛心 reaction
-- 已完成分組（本週 / 上週 / 更早）
+- 已完成分組（本週 / 上週 / 更早）；已完成任務可點擊開啟詳情、可拖曳回象限恢復
 
 ### 個人 & 團隊模式
 - 團隊模式：共用四象限，即時多人同步
@@ -73,7 +73,6 @@ taskManager_git/
 ├── users.json          # 用戶資料（自動生成）
 ├── leaves.json         # 請假紀錄（自動生成）
 ├── personal_tasks.json # 個人任務（自動生成）
-├── quick_cmds.json     # 常用指令（自動生成）
 ├── chat.json           # 留言板訊息（自動生成）
 │
 ├── avatars/            # 用戶上傳頭像（自動生成）
@@ -94,13 +93,11 @@ taskManager_git/
 | GET | `/api/chat` | 取得留言板訊息 |
 | GET | `/api/leaves` | 取得請假紀錄 |
 | GET | `/api/personal-tasks?name=X` | 取得個人任務 |
-| GET | `/api/quick-cmds` | 取得常用指令 |
 | GET | `/api/events` | SSE 即時連線 |
 | POST | `/api/tasks` | 同步任務列表 |
 | POST | `/api/users` | 儲存用戶資料 |
 | POST | `/api/chat` | 發送留言板訊息 |
 | POST | `/api/leaves` | 新增 / 刪除請假 |
 | POST | `/api/personal-tasks` | 儲存個人任務 |
-| POST | `/api/quick-cmds` | 儲存常用指令 |
 | POST | `/api/upload-avatar` | 上傳頭像（multipart） |
 | POST | `/api/history` | 記錄操作歷史 |

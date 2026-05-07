@@ -121,92 +121,6 @@ header::after {
 .h-done-btn:hover { border-color: var(--done); color: var(--done); background: rgba(154,144,128,.08); }
 .h-done-btn.active { border-color: var(--done); color: var(--done); background: rgba(154,144,128,.12); }
 
-.h-qcmd-btn {
-  border: 1px solid var(--border2); border-radius: 8px;
-  padding: 6px 14px; color: var(--dim); font-size: .8rem; font-weight: 600;
-  cursor: pointer; display: flex; align-items: center; gap: 6px;
-  transition: all .2s; font-family: inherit; background: transparent;
-  white-space: nowrap;
-}
-.h-qcmd-btn:hover { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.08); }
-.h-qcmd-btn.active { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.12); }
-
-/* ═══ QUICK COMMANDS PANEL ═══ */
-.qcmd-overlay {
-  position: fixed; inset: 0; z-index: 200;
-  background: rgba(40,30,20,.18); backdrop-filter: blur(2px);
-}
-.qcmd-panel {
-  position: fixed; top: 60px; right: 20px; z-index: 201;
-  width: 340px; max-height: calc(100vh - 80px);
-  background: var(--panel); border: 1px solid var(--border2);
-  border-radius: 14px; box-shadow: 0 8px 32px rgba(40,30,20,.18);
-  display: flex; flex-direction: column; overflow: hidden;
-  animation: modalIn .18s ease;
-}
-.qcmd-head {
-  display: flex; align-items: center; gap: 8px;
-  padding: 14px 16px 12px; border-bottom: 1px solid var(--border2);
-  flex-shrink: 0;
-}
-.qcmd-head h3 { font-size: .9rem; font-weight: 700; color: var(--text); flex: 1; margin: 0; }
-.qcmd-edit-btn {
-  font-size: .7rem; font-weight: 600; padding: 4px 10px;
-  border-radius: 999px; border: 1px solid var(--border2); color: var(--dim);
-  background: transparent; cursor: pointer; font-family: inherit; transition: all .15s;
-}
-.qcmd-edit-btn:hover { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.08); }
-.qcmd-edit-btn.editing { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.1); }
-.qcmd-close {
-  background: transparent; border: none; cursor: pointer; color: var(--dim);
-  display: flex; padding: 4px; border-radius: 6px; transition: color .15s;
-}
-.qcmd-close:hover { color: var(--text); background: var(--s2); }
-.qcmd-list {
-  flex: 1; overflow-y: auto; padding: 10px 12px;
-  display: flex; flex-direction: column; gap: 6px;
-  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
-}
-.qcmd-empty {
-  text-align: center; color: var(--dim); font-size: .78rem; padding: 24px 12px; opacity: .6;
-}
-.qcmd-item {
-  display: flex; align-items: flex-start; gap: 8px;
-  padding: 9px 12px; border-radius: 10px;
-  background: var(--s2); border: 1px solid var(--border2);
-  cursor: pointer; transition: all .15s;
-}
-.qcmd-item:hover { border-color: var(--acc); background: rgba(90,148,144,.07); }
-.qcmd-item-body { flex: 1; min-width: 0; }
-.qcmd-item-label { font-size: .8rem; font-weight: 600; color: var(--text); line-height: 1.3; }
-.qcmd-item-cmd { font-size: .72rem; color: var(--dim); font-family: var(--mono); margin-top: 2px; word-break: break-all; }
-.qcmd-item-del {
-  background: none; border: none; cursor: pointer; color: transparent;
-  font-size: .75rem; padding: 2px 5px; border-radius: 5px; transition: color .15s; flex-shrink: 0;
-}
-.qcmd-item:hover .qcmd-item-del { color: var(--dim); }
-.qcmd-item-del:hover { color: var(--q1) !important; }
-.qcmd-item-drag { color: transparent; cursor: grab; font-size: .8rem; padding: 2px 3px; flex-shrink: 0; transition: color .15s; }
-.qcmd-item:hover .qcmd-item-drag { color: var(--dim); }
-
-.qcmd-add-row {
-  padding: 10px 12px; border-top: 1px solid var(--border2); flex-shrink: 0;
-  display: flex; flex-direction: column; gap: 6px;
-}
-.qcmd-add-row input, .qcmd-add-row textarea {
-  width: 100%; border: 1px solid var(--border2); border-radius: 8px;
-  padding: 7px 10px; font-size: .78rem; font-family: inherit;
-  background: var(--bg); color: var(--text); resize: none;
-}
-.qcmd-add-row input:focus, .qcmd-add-row textarea:focus { outline: none; border-color: var(--acc); }
-.qcmd-add-submit {
-  width: 100%; padding: 7px; border-radius: 8px;
-  background: var(--acc); border: none; color: #fff;
-  font-size: .78rem; font-weight: 600; cursor: pointer;
-  font-family: inherit; transition: opacity .15s;
-}
-.qcmd-add-submit:hover { opacity: .85; }
-
 /* copy toast */
 .copy-toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -968,11 +882,8 @@ body.personal-mode .sug-sub { display: none; }
   .h-add { padding:7px 10px; }
   .h-done-btn span { display:none; }
   .h-done-btn { padding:6px 10px; }
-  .h-qcmd-btn span { display:none; }
-  .h-qcmd-btn { padding:6px 10px; }
   .team-name-btn { display:none; }
   .mode-toggle { display:none; }
-  .qcmd-panel { right: 8px; width: calc(100vw - 16px); }
 
   /* Mobile mode bar */
   .mob-mode-bar {
@@ -1146,13 +1057,6 @@ body.personal-mode .sug-sub { display: none; }
     <div class="user-av" id="h-user-av"></div>
     <span class="user-name-lbl" id="h-user-name">---</span>
   </div>
-  <button class="h-qcmd-btn" id="h-qcmd-btn" onclick="toggleQcmdPanel()">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-      <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-    </svg>
-    <span>常用指令</span>
-  </button>
-  <div class="h-divider"></div>
   <button class="h-done-btn" id="h-done-btn" onclick="toggleDonePanel()">
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
       <polyline points="20 6 9 17 4 12"/>
@@ -1380,6 +1284,12 @@ body.personal-mode .sug-sub { display: none; }
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>編輯
         </button>
+        <button class="drawer-edit" onclick="copyTaskUrl()" title="複製連結" id="drawer-copy-url-btn">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+          </svg>複製連結
+        </button>
         <button class="drawer-close" onclick="closeDrawer()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -1582,14 +1492,21 @@ async function initProfile(){
       }
     } catch(e){}
   }
-  // Load tasks, chat, points, leaves, and quick commands from server
-  await Promise.all([loadTasks(), loadChat(), loadPoints(), loadLeaves(), loadQuickCmds()]);
+  await Promise.all([loadTasks(), loadChat(), loadPoints(), loadLeaves()]);
   if(!profile){
     showSetup(false);
   } else {
     applyProfile();
     render();
   }
+  // Open task drawer if URL contains a task id
+  const urlTaskId = parseInt(location.pathname.replace('/',''));
+  if(urlTaskId && tasks.find(t=>t.id===urlTaskId)) openDrawer(urlTaskId);
+  // Handle browser back/forward
+  window.addEventListener('popstate', e=>{
+    if(e.state && e.state.taskId){ openDrawer(e.state.taskId); }
+    else { document.getElementById('dov').classList.remove('open'); openTaskId=null; }
+  });
 }
 
 let _nameCheckTimer = null;
@@ -2722,6 +2639,7 @@ function saveTask(){
 function openDrawer(id){
   openTaskId=id;
   const t=tasks.find(t=>t.id===id); if(!t)return;
+  history.pushState({taskId:id}, '', '/'+id);
   document.getElementById('dqdot').style.background=COLORS[t.q];
   document.getElementById('dqname').textContent=QNAMES[t.q];
   document.getElementById('dtitle').textContent=t.text;
@@ -2782,7 +2700,7 @@ function saveDrawerField(field, value){
   render();
 }
 
-function closeDrawer(){ document.getElementById('dov').classList.remove('open'); openTaskId=null; }
+function closeDrawer(){ document.getElementById('dov').classList.remove('open'); openTaskId=null; history.pushState(null,'','/'); }
 function addComment(){
   const inp=document.getElementById('cinp'), text=inp.value.trim();
   if(!text||openTaskId===null){inp.focus();return;}
@@ -3122,16 +3040,6 @@ function connectSSE(){
         return;
       }
 
-      // Handle quick commands update
-      if(entry.type === 'quick_cmds_update'){
-        const isSelf = entry.from_ip === myIP;
-        if(!isSelf){
-          quickCmds = entry.cmds || [];
-          if(qcmdPanelOpen) renderQcmdList();
-        }
-        return;
-      }
-
       // Handle history notifications
       const isSelf = entry.ip === myIP;
       if(isSelf) return; // 自己的操作不通知
@@ -3315,109 +3223,20 @@ function toggleDonePanel(){
   if(matrix) matrix.classList.toggle('grid-mode', !doneVisible);
 }
 
-/* ─── QUICK COMMANDS ─── */
-let quickCmds = [];
-let qcmdPanelOpen = false;
-let qcmdEditing = false;
+/* ─── TASK URL ─── */
+function taskUrl(id){ return window.location.origin + '/' + id; }
 
-async function loadQuickCmds(){
-  try {
-    const res = await fetch('/api/quick-cmds');
-    if(res.ok) quickCmds = await res.json();
-  } catch(e){ console.error('Failed to load quick cmds:', e); }
-}
-
-async function saveQuickCmds(){
-  try {
-    await fetch('/api/quick-cmds', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(quickCmds)
-    });
-  } catch(e){ console.error('Failed to save quick cmds:', e); }
-}
-
-function renderQcmdList(){
-  const list = document.getElementById('qcmd-list');
-  if(!quickCmds.length){
-    list.innerHTML = '<div class="qcmd-empty">尚無常用指令<br>點擊「編輯」新增</div>';
-    return;
-  }
-  list.innerHTML = quickCmds.map((c,i)=>`
-    <div class="qcmd-item" onclick="copyQcmd(${i},event)">
-      ${qcmdEditing ? `<span class="qcmd-item-drag" title="拖曳排序">⠿</span>` : ''}
-      <div class="qcmd-item-body">
-        <div class="qcmd-item-label">${escHtml(c.label)}</div>
-        <div class="qcmd-item-cmd">${escHtml(c.cmd)}</div>
-      </div>
-      ${qcmdEditing ? `<button class="qcmd-item-del" onclick="delQuickCmd(${i},event)" title="刪除">✕</button>` : ''}
-    </div>
-  `).join('');
-}
-
-function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-
-function toggleQcmdPanel(){
-  qcmdPanelOpen = !qcmdPanelOpen;
-  document.getElementById('qcmd-overlay').style.display = qcmdPanelOpen ? '' : 'none';
-  document.getElementById('qcmd-panel').style.display = qcmdPanelOpen ? '' : 'none';
-  document.getElementById('h-qcmd-btn').classList.toggle('active', qcmdPanelOpen);
-  if(qcmdPanelOpen) renderQcmdList();
-}
-
-function closeQcmdPanel(){
-  qcmdPanelOpen = false;
-  qcmdEditing = false;
-  document.getElementById('qcmd-overlay').style.display = 'none';
-  document.getElementById('qcmd-panel').style.display = 'none';
-  document.getElementById('h-qcmd-btn').classList.remove('active');
-  document.getElementById('qcmd-edit-btn').classList.remove('editing');
-  document.getElementById('qcmd-edit-btn').textContent = '編輯';
-  document.getElementById('qcmd-add-row').style.display = 'none';
-}
-
-function toggleQcmdEdit(){
-  qcmdEditing = !qcmdEditing;
-  const btn = document.getElementById('qcmd-edit-btn');
-  btn.classList.toggle('editing', qcmdEditing);
-  btn.textContent = qcmdEditing ? '完成' : '編輯';
-  document.getElementById('qcmd-add-row').style.display = qcmdEditing ? '' : 'none';
-  if(qcmdEditing){
-    document.getElementById('qcmd-add-label').value = '';
-    document.getElementById('qcmd-add-cmd').value = '';
-  }
-  renderQcmdList();
-}
-
-async function addQuickCmd(){
-  const label = document.getElementById('qcmd-add-label').value.trim();
-  const cmd   = document.getElementById('qcmd-add-cmd').value.trim();
-  if(!label || !cmd) return;
-  quickCmds.push({label, cmd});
-  renderQcmdList();
-  document.getElementById('qcmd-add-label').value = '';
-  document.getElementById('qcmd-add-cmd').value = '';
-  await saveQuickCmds();
-}
-
-async function delQuickCmd(i, e){
-  if(e) e.stopPropagation();
-  quickCmds.splice(i,1);
-  renderQcmdList();
-  await saveQuickCmds();
-}
-
-function copyQcmd(i, e){
-  if(qcmdEditing) return;
-  const cmd = quickCmds[i].cmd;
-  navigator.clipboard.writeText(cmd).then(()=>{
-    showCopyToast('已複製到剪貼簿');
+function copyTaskUrl(){
+  if(openTaskId===null) return;
+  const url = taskUrl(openTaskId);
+  navigator.clipboard.writeText(url).then(()=>{
+    showCopyToast('已複製任務連結');
   }).catch(()=>{
     const ta = document.createElement('textarea');
-    ta.value = cmd; ta.style.position='fixed'; ta.style.opacity='0';
+    ta.value = url; ta.style.position='fixed'; ta.style.opacity='0';
     document.body.appendChild(ta); ta.select();
     document.execCommand('copy'); document.body.removeChild(ta);
-    showCopyToast('已複製到剪貼簿');
+    showCopyToast('已複製任務連結');
   });
 }
 
@@ -3433,25 +3252,5 @@ function showCopyToast(msg){
 
 <!-- Notification Container -->
 <div class="notif-container" id="notif-container"></div>
-
-<!-- QUICK COMMANDS PANEL -->
-<div class="qcmd-overlay" id="qcmd-overlay" onclick="closeQcmdPanel()" style="display:none"></div>
-<div class="qcmd-panel" id="qcmd-panel" style="display:none">
-  <div class="qcmd-head">
-    <h3>⚡ 常用指令</h3>
-    <button class="qcmd-edit-btn" id="qcmd-edit-btn" onclick="toggleQcmdEdit()">編輯</button>
-    <button class="qcmd-close" onclick="closeQcmdPanel()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-      </svg>
-    </button>
-  </div>
-  <div class="qcmd-list" id="qcmd-list"></div>
-  <div class="qcmd-add-row" id="qcmd-add-row" style="display:none">
-    <input id="qcmd-add-label" placeholder="名稱（例：重新啟動服務）" maxlength="60">
-    <textarea id="qcmd-add-cmd" rows="2" placeholder="指令內容（例：sudo systemctl restart app）"></textarea>
-    <button class="qcmd-add-submit" onclick="addQuickCmd()">+ 新增</button>
-  </div>
-</div>
 </body>
 </html>

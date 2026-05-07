@@ -1051,7 +1051,7 @@ header::after {
 
   <!-- RIGHT: Quadrant Matrix -->
   <div class="right-area">
-    <div class="matrix">
+    <div class="matrix grid-mode">
       <!-- Q1 -->
       <div class="quadrant" id="q1"
            ondragover="onDragOver(event,1)" ondrop="onDrop(event,1)" ondragleave="event.currentTarget.classList.remove('drag-over')">
@@ -2290,8 +2290,9 @@ function render(){
         ? `<span class="handlers-stack" style="margin-left:4px" title="${handlers.map(h=>esc(h.name)).join(', ')}">${handlers.slice(0,3).map(h=>`<span class="handler-av">${avHTML(h.avatar,13,h.avatar_type)}</span>`).join('')}${handlers.length>3?`<span class="handlers-more">+${handlers.length-3}</span>`:''}</span>`
         : '';
       const doneDate = t.doneAt ? t.doneAt.slice(0,10) : '';
-      return `<div class="done-card">
-        <div class="done-card-top">
+      return `<div class="done-card" draggable="true"
+        ondragstart="onDragStart(event,${t.id})" ondragend="onDragEnd(event)">
+        <div class="done-card-top" onclick="openDrawer(${t.id})" style="cursor:pointer">
           <span class="done-num">${i+1}.</span>
           <div class="done-qdot" style="background:${COLORS[t.q]}"></div>
           <span class="done-text">${esc(t.text)}</span>
@@ -2611,7 +2612,10 @@ function onDrop(e,q){
   e.preventDefault(); document.getElementById('q'+q).classList.remove('drag-over');
   if(dragId===null)return;
   const t=tasks.find(t=>t.id===dragId);
-  if(t&&t.q!==q){ logHistory('移動象限', t, `Q${t.q} → Q${q}`); t.q=q; t.done=false; save(); render(); }
+  if(t){
+    const changed = t.q!==q || t.done;
+    if(changed){ logHistory(t.done?'恢復任務':'移動象限', t, `Q${t.q} → Q${q}`); t.q=q; t.done=false; save(); render(); }
+  }
   dragId=null;
 }
 function onDoneDragOver(e){

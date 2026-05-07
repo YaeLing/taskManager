@@ -93,13 +93,6 @@ header::after {
 .team-name-lbl { font-size: .58rem; color: var(--dim); text-transform: uppercase; letter-spacing: .8px; }
 .team-name-val { font-size: .82rem; font-weight: 600; color: var(--text); white-space: nowrap; max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
 
-/* Mode toggle */
-.mode-toggle { display: flex; border: 1px solid var(--border2); border-radius: 8px; overflow: hidden; flex-shrink: 0; }
-.mode-btn { padding: 5px 12px; font-size: .75rem; font-weight: 600; font-family: inherit; background: transparent; border: none; cursor: pointer; color: var(--dim); transition: all .15s; white-space: nowrap; }
-.mode-btn.active { background: var(--acc); color: #fff; }
-.mode-btn:not(.active):hover { background: var(--s2); color: var(--text); }
-@media (max-width: 639px) { .mode-toggle { display: none; } }
-
 .h-add {
   background: linear-gradient(135deg, var(--acc) 0%, var(--q4) 100%);
   border: none; border-radius: 8px;
@@ -488,6 +481,9 @@ header::after {
   border: 1px solid rgba(90,148,144,.2);
 }
 .sug-sub { font-size: .73rem; color: var(--dim); }
+.sug-ticket-btn { background:transparent; border:1px solid var(--border2); border-radius:6px; padding:2px 6px; cursor:pointer; font-size:.68rem; color:var(--dim); transition:all .15s; margin-left:auto; white-space:nowrap; }
+.sug-ticket-btn:hover { border-color:var(--acc); color:var(--acc); }
+.sug-ticket-btn.active { background:rgba(90,148,144,.15); border-color:var(--acc); color:var(--acc); }
 
 .sug-list {
   flex: 1; overflow-y: auto; padding: 10px 0;
@@ -646,6 +642,10 @@ header::after {
 
 .comment-count { font-size:.6rem; color:var(--dim); cursor:pointer; display:inline-flex; align-items:center; gap:3px; background:var(--s2); border-radius:999px; padding:1px 6px; transition:color .15s; border:1px solid var(--border); }
 .comment-count:hover, .comment-count.has { color:var(--c); border-color:var(--c); }
+.ticket-tag { display:inline-flex; align-items:center; font-size:.58rem; padding:1px 5px; border-radius:4px; background:rgba(90,148,144,.15); color:var(--acc); border:1px solid rgba(90,148,144,.35); font-weight:700; white-space:nowrap; letter-spacing:.2px; }
+.task-actions .tb { color:var(--dim); }
+.task-actions .tb.on { color:var(--acc); background:rgba(90,148,144,.15); }
+.task-actions .tb:hover { background:rgba(90,148,144,.15); color:var(--acc); }
 
 .task-actions { display:flex; gap:2px; flex-shrink:0; opacity:0; transition:opacity .15s; }
 .task-card:hover .task-actions { opacity:1; }
@@ -657,47 +657,6 @@ header::after {
 .q-empty svg { opacity:.5; }
 
 /* ═══ COMPLETED SECTION ═══ */
-/* Personal flat list */
-.personal-list {
-  display: none; flex-direction: column; flex: 1; overflow-y: auto;
-  padding: 12px 14px; gap: 6px;
-  background: var(--bg);
-}
-body.personal-mode .matrix { display: none; }
-body.personal-mode .personal-list { display: flex; }
-body.personal-mode .field-quadrant { display: none; }
-body.personal-mode .sug-sub { display: none; }
-
-.ptask {
-  display: flex; align-items: center; gap: 10px;
-  padding: 10px 12px; border-radius: 9px;
-  background: var(--panel); border: 1px solid var(--border2);
-  transition: border-color .15s;
-}
-.ptask:hover { border-color: var(--acc); }
-.ptask-check {
-  width: 20px; height: 20px; border-radius: 50%;
-  border: 2px solid var(--border2); background: transparent;
-  cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
-  transition: all .15s;
-}
-.ptask-check:hover { border-color: var(--q3); background: rgba(106,154,120,.1); }
-.ptask-check svg { display: none; }
-.ptask.done .ptask-check { background: var(--q3); border-color: var(--q3); }
-.ptask.done .ptask-check svg { display: block; stroke: #fff; }
-.ptask-body { flex: 1; min-width: 0; cursor: pointer; }
-.ptask-text { font-size: .85rem; line-height: 1.4; word-break: break-word; }
-.ptask.done .ptask-text { text-decoration: line-through; opacity: .5; }
-.ptask-due { font-size: .68rem; color: var(--dim); margin-top: 2px; }
-.ptask-due.overdue { color: var(--q1); }
-.ptask-del { background: none; border: none; cursor: pointer; color: var(--dim); padding: 4px 6px; border-radius: 5px; font-size: .75rem; flex-shrink: 0; opacity: 0; transition: opacity .15s; }
-.ptask:hover .ptask-del { opacity: 1; }
-.ptask-del:hover { color: var(--q1); background: rgba(184,114,106,.1); }
-.ptask-edit { background: none; border: none; cursor: pointer; color: var(--dim); padding: 4px 7px; border-radius: 5px; font-size: .7rem; flex-shrink: 0; opacity: 0; transition: opacity .15s; display: flex; align-items: center; gap: 4px; }
-.ptask:hover .ptask-edit { opacity: 1; }
-.ptask-edit:hover { color: var(--acc); background: rgba(90,148,144,.1); }
-.personal-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--dim); font-size: .8rem; gap: 8px; opacity: .6; }
-
 .completed-section {
   flex: 1; min-width: 140px;
   background: var(--panel);
@@ -944,7 +903,6 @@ body.personal-mode .sug-sub { display: none; }
 
 /* ═══ MOBILE TAB BAR ═══ */
 .mob-tabs { display:none; }
-.mob-mode-bar { display:none; }
 
 /* ═══ TABLET (640–899px) ═══ */
 @media (max-width: 899px) and (min-width: 640px) {
@@ -971,22 +929,7 @@ body.personal-mode .sug-sub { display: none; }
   .h-qcmd-btn span { display:none; }
   .h-qcmd-btn { padding:6px 10px; }
   .team-name-btn { display:none; }
-  .mode-toggle { display:none; }
   .qcmd-panel { right: 8px; width: calc(100vw - 16px); }
-
-  /* Mobile mode bar */
-  .mob-mode-bar {
-    display: flex; background: var(--panel);
-    border-bottom: 1px solid var(--border2);
-    padding: 6px 12px; gap: 6px;
-    position: sticky; top: 0; z-index: 51;
-  }
-  .mob-mode-btn {
-    flex: 1; padding: 6px; border-radius: 7px; border: 1px solid var(--border2);
-    font-size: .75rem; font-weight: 600; font-family: inherit;
-    background: transparent; color: var(--dim); cursor: pointer; transition: all .15s;
-  }
-  .mob-mode-btn.active { background: var(--acc); color: #fff; border-color: var(--acc); }
 
   /* Mobile tab bar */
   .mob-tabs {
@@ -1137,10 +1080,6 @@ body.personal-mode .sug-sub { display: none; }
     <div class="team-name-lbl">Team</div>
     <div class="team-name-val" id="h-team-name">Firmware Update Team</div>
   </button>
-  <div class="mode-toggle">
-    <button class="mode-btn active" id="mode-team-btn" onclick="setViewMode('team')">Team</button>
-    <button class="mode-btn" id="mode-personal-btn" onclick="setViewMode('personal')">個人</button>
-  </div>
   <div class="h-divider"></div>
   <div class="user-prof" id="user-prof-btn" onclick="showSetup(true)">
     <div class="user-av" id="h-user-av"></div>
@@ -1166,12 +1105,6 @@ body.personal-mode .sug-sub { display: none; }
     <span>新增任務</span>
   </button>
 </header>
-
-<!-- MOBILE MODE TOGGLE -->
-<div class="mob-mode-bar" id="mob-mode-bar">
-  <button class="mob-mode-btn active" id="mob-mode-team" onclick="setViewMode('team')">Team</button>
-  <button class="mob-mode-btn" id="mob-mode-personal" onclick="setViewMode('personal')">個人</button>
-</div>
 
 <!-- MOBILE TAB BAR -->
 <nav class="mob-tabs" id="mob-tabs">
@@ -1201,6 +1134,7 @@ body.personal-mode .sug-sub { display: none; }
         </svg>
         <h2>建議執行順序</h2>
         <span class="sug-badge" id="sug-count">0</span>
+        <button class="sug-ticket-btn" id="sug-ticket-btn" onclick="toggleSugTicket()" title="只顯示 Ticket 任務">🎫 Ticket</button>
       </div>
       <div class="sug-sub">依象限優先級 ＋ 截止日期排序</div>
     </div>
@@ -1260,9 +1194,6 @@ body.personal-mode .sug-sub { display: none; }
       <span class="ax-lbl al-left">← 緊急</span>
       <span class="ax-lbl al-right">不緊急 →</span>
     </div>
-
-    <!-- PERSONAL LIST (personal mode only) -->
-    <div class="personal-list" id="personal-list"></div>
 
     <!-- COMPLETED -->
     <div class="col-resizer col-resizer--done" id="resizer-done" style="display:none"></div>
@@ -1426,6 +1357,10 @@ body.personal-mode .sug-sub { display: none; }
       <label>說明 <span>（選填）</span></label>
       <textarea id="idesc" placeholder="詳細說明、注意事項…" maxlength="500"></textarea>
     </div>
+    <div class="field" style="flex-direction:row;align-items:center;gap:10px">
+      <input type="checkbox" id="iticket" style="width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0">
+      <label for="iticket" style="cursor:pointer;margin:0">標記為 Ticket</label>
+    </div>
     <div class="field">
       <label>
         截止日期 <span>（選填）<span class="due-clear" onclick="document.getElementById('idue').value=''">清除</span></span>
@@ -1519,52 +1454,6 @@ function editTeamName(){
   const val = next.trim() || 'My Team';
   document.getElementById('h-team-name').textContent = val;
   localStorage.setItem('team_name', val);
-}
-
-// ── View Mode (team / personal) ──
-let viewMode = 'team';
-let _teamTasks = null; // snapshot when switching to personal
-
-async function setViewMode(mode){
-  if(viewMode === mode) return;
-  if(mode === 'personal' && !profile){ showSetup(false); return; }
-  // Flush pending save before switching
-  if(_saveTimer){ clearTimeout(_saveTimer); _saveTimer = null; }
-  if(viewMode === 'personal') await savePersonalTasks();
-  viewMode = mode;
-  document.body.classList.toggle('personal-mode', mode === 'personal');
-  document.getElementById('mode-team-btn').classList.toggle('active', mode === 'team');
-  document.getElementById('mode-personal-btn').classList.toggle('active', mode === 'personal');
-  document.getElementById('mob-mode-team').classList.toggle('active', mode === 'team');
-  document.getElementById('mob-mode-personal').classList.toggle('active', mode === 'personal');
-  if(mode === 'personal'){
-    _teamTasks = tasks.slice();
-    await loadPersonalTasks();
-  } else {
-    if(_teamTasks !== null){ tasks = _teamTasks; _teamTasks = null; }
-    else await loadTasks();
-  }
-  render();
-}
-
-async function loadPersonalTasks(){
-  if(!profile) return;
-  try {
-    const res = await fetch(`/api/personal-tasks?name=${encodeURIComponent(profile.name)}`);
-    const data = await res.json();
-    tasks = data.tasks || [];
-  } catch(e){ tasks = []; }
-}
-
-async function savePersonalTasks(){
-  if(!profile) return;
-  try {
-    await fetch('/api/personal-tasks', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ name: profile.name, tasks })
-    });
-  } catch(e){ console.error('Failed to save personal tasks:', e); }
 }
 
 async function initProfile(){
@@ -1841,6 +1730,13 @@ function setFavicon(url){
 }
 
 /* ─── HANDLER ─── */
+function toggleTicket(id,e){
+  if(e) e.stopPropagation();
+  const t=tasks.find(t=>t.id===id); if(!t) return;
+  t.ticket = !t.ticket;
+  save(); render();
+}
+
 function toggleHandler(id,e){
   if(e)e.stopPropagation();
   if(!profile){showSetup(false);return;}
@@ -2288,17 +2184,7 @@ async function loadTasks(){
 // Save tasks to server (with debounce)
 let _saveTimer = null;
 function save(){
-  if(viewMode === 'personal'){
-    if(_saveTimer) clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(async ()=>{
-      if(_saving) return;
-      _saving = true;
-      await savePersonalTasks();
-      _saving = false;
-    }, 100);
-    return;
-  }
-  // Team mode: also save to localStorage as fallback
+  // Save to localStorage as fallback
   localStorage.setItem('tasks_v4', JSON.stringify(tasks));
   if(_saveTimer) clearTimeout(_saveTimer);
   _saveTimer = setTimeout(async ()=>{
@@ -2337,51 +2223,12 @@ function dueBadge(due){
 function isOverdue(due){ return !!due && Math.round((new Date(due)-new Date(today()))/86400000)<0; }
 
 /* ─── RENDER ─── */
-function renderPersonalList(active, done){
-  const el = document.getElementById('personal-list');
-  const todayStr = new Date().toISOString().slice(0,10);
-  if(!active.length){
-    el.innerHTML = '<div class="personal-empty"><span style="font-size:1.5rem">📋</span>尚無個人任務</div>';
-  } else {
-    el.innerHTML = active.map(t => {
-      const overdue = t.due && t.due < todayStr;
-      const dueLabel = t.due ? `<div class="ptask-due${overdue?' overdue':''}">📅 ${t.due}${overdue?' · 逾期':''}</div>` : '';
-      return `<div class="ptask" id="ptask-${t.id}">
-        <div class="ptask-check" onclick="toggleDone(${t.id},event)">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>
-        <div class="ptask-body" onclick="openDrawer(${t.id})">
-          <div class="ptask-text">${esc(t.text)}</div>
-          ${t.desc ? `<div class="ptask-due" style="margin-top:2px">${esc(t.desc.slice(0,60))}${t.desc.length>60?'…':''}</div>` : ''}
-          ${dueLabel}
-        </div>
-        <button class="ptask-edit" onclick="openModal(${t.id})" title="編輯">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>編輯
-        </button>
-        <button class="ptask-del" onclick="delTask(${t.id},event)" title="刪除">✕</button>
-      </div>`;
-    }).join('');
-  }
-  // Completed section stays the same
-  document.getElementById('done-badge').textContent = done.length;
-}
-
 function render(){
   const active=tasks.filter(t=>!t.done);
   const done=tasks.filter(t=>t.done);
   document.getElementById('s-all').textContent=tasks.length;
   document.getElementById('s-done').textContent=done.length;
   document.getElementById('s-left').textContent=active.length;
-
-  if(viewMode === 'personal'){
-    renderPersonalList(active, done);
-    renderSugPanel(active);
-    renderDonePanel(done);
-    return;
-  }
 
   // Quadrants
   [1,2,3,4].forEach(q=>{
@@ -2416,6 +2263,7 @@ function render(){
           ${t.desc?`<div class="task-desc">${esc(t.desc)}</div>`:''}
           <div class="task-footer">
             ${dueBadge(t.due)}
+            ${t.ticket?`<span class="ticket-tag">🎫 Ticket</span>`:''}
             ${handlersHTML}
             ${t.createdBy?`<span class="creator-tag" title="由 ${esc(t.createdBy.name)} 建立"><span class="handler-av">${avHTML(t.createdBy.avatar,13,t.createdBy.avatar_type)}</span></span>`:''}
             <span class="comment-count ${cc?'has':''}" onclick="openDrawer(${t.id})" style="--c:${COLORS[q]}">
@@ -2425,6 +2273,9 @@ function render(){
           </div>
         </div>
         <div class="task-actions">
+          <button class="tb${t.ticket?' on':''}" onclick="toggleTicket(${t.id},event)" title="${t.ticket?'取消 Ticket':'標記 Ticket'}">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          </button>
           <button class="hb${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'加入處理'}">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
@@ -2465,6 +2316,7 @@ function render(){
           <div class="sug-tags">
             <span class="sug-tag sug-qbadge" style="background:${COLORS[t.q]}18;color:${COLORS[t.q]};border-color:${COLORS[t.q]}40">${QNAMES[t.q]}</span>
             ${isOverdue(t.due)?`<span class="sug-tag" style="background:rgba(184,114,106,.12);color:var(--q1);border-color:var(--q1gl)">⚠ 逾期</span>`:t.due?`<span class="sug-tag sug-duebadge" style="background:var(--s2);color:var(--dim);border-color:var(--border2)">📅 ${t.due}</span>`:''}
+            ${t.ticket?`<span class="ticket-tag">🎫 Ticket</span>`:''}
           </div>
         </div>
         <div class="sug-right">
@@ -2555,6 +2407,13 @@ function render(){
   if(openTaskId!==null) renderDrawer(openTaskId);
 }
 
+let sugTicketOnly = false;
+function toggleSugTicket(){
+  sugTicketOnly = !sugTicketOnly;
+  document.getElementById('sug-ticket-btn').classList.toggle('active', sugTicketOnly);
+  renderSugPanel(tasks.filter(t=>!t.done));
+}
+
 function renderSugPanel(active){
   const sorted=[...active].sort((a,b)=>{
     const aOv=isOverdue(a.due), bOv=isOverdue(b.due);
@@ -2563,12 +2422,13 @@ function renderSugPanel(active){
     if(a.due&&b.due) return a.due.localeCompare(b.due);
     if(a.due) return -1; if(b.due) return 1; return 0;
   });
+  const display = sugTicketOnly ? sorted.filter(t=>t.ticket) : sorted;
   document.getElementById('sug-count').textContent=sorted.length;
   const sl=document.getElementById('sug-list');
-  if(!sorted.length){
+  if(!display.length){
     sl.innerHTML='<div class="sug-empty">🎉 目前沒有待辦任務<br><span style="font-size:.65rem;opacity:.7">新增任務開始排程</span></div>';
   } else {
-    sl.innerHTML=sorted.map((t,i)=>{
+    sl.innerHTML=display.map((t,i)=>{
       const handlers = t.handlers || (t.handler ? [t.handler] : []);
       const isMine = profile && handlers.some(h=>h.name===profile.name);
       const handlersAvatars = handlers.length > 0
@@ -2580,9 +2440,12 @@ function renderSugPanel(active){
           <div class="sug-text">${esc(t.text)}</div>
           <div class="sug-tags">
             ${isOverdue(t.due)?`<span class="sug-tag" style="background:rgba(184,114,106,.12);color:var(--q1);border-color:var(--q1gl)">⚠ 逾期</span>`:t.due?`<span class="sug-tag sug-duebadge" style="background:var(--s2);color:var(--dim);border-color:var(--border2)">📅 ${t.due}</span>`:''}
+            ${t.ticket?`<span class="ticket-tag">🎫 Ticket</span>`:''}
           </div>
         </div>
         <div class="sug-right">
+          ${handlersAvatars}
+          <button class="sug-handle-btn${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'接手'}">${isMine?'處理中':'接手'}</button>
           <button class="sug-done-btn" onclick="toggleDone(${t.id},event)" title="標記完成">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
           </button>
@@ -2676,11 +2539,13 @@ function openModal(id=null, defaultQ=null){
     const t=tasks.find(t=>t.id===id);
     document.getElementById('itext').value=t.text;
     document.getElementById('idesc').value=t.desc||'';
+    document.getElementById('iticket').checked=!!t.ticket;
     document.getElementById('idue').value=t.due||'';
     pickQ(t.q);
   } else {
     document.getElementById('itext').value='';
     document.getElementById('idesc').value='';
+    document.getElementById('iticket').checked=false;
     document.getElementById('idue').value=today();
     pickQ(defaultQ||1);
   }
@@ -2694,6 +2559,7 @@ function saveTask(){
   if(!text){document.getElementById('itext').focus();return;}
   const desc=document.getElementById('idesc').value.trim();
   const due=document.getElementById('idue').value;
+  const ticket=document.getElementById('iticket').checked;
   if(editId){
     const t=tasks.find(t=>t.id===editId);
     if(t){
@@ -2701,12 +2567,13 @@ function saveTask(){
       if(t.text!==text) changed.push(`名稱：${t.text} → ${text}`);
       if(t.q!==selQ) changed.push(`象限：Q${t.q} → Q${selQ}`);
       if((t.due||'')!==(due||'')) changed.push(`截止：${t.due||'無'} → ${due||'無'}`);
-      t.text=text; t.desc=desc; t.due=due||null; t.q=selQ;
+      if(!!t.ticket!==ticket) changed.push(`Ticket：${t.ticket?'是':'否'} → ${ticket?'是':'否'}`);
+      t.text=text; t.desc=desc; t.due=due||null; t.q=selQ; t.ticket=ticket||false;
       logHistory('編輯任務', t, changed.join('；')||'更新說明');
     }
   } else {
     const newTask={
-      id:Date.now(),text,desc,due:due||null,q:selQ,done:false,comments:[],
+      id:Date.now(),text,desc,due:due||null,ticket:ticket||null,q:selQ,done:false,comments:[],
       createdBy: profile ? {name:profile.name,avatar:profile.avatar,avatar_type:profile.avatar_type||'emoji'} : null,
       createdAt: new Date().toISOString()
     };
@@ -2734,7 +2601,7 @@ function openDrawer(id){
   const creatorHTML = t.createdBy
     ? `<span class="handler-tag" style="margin-left:6px;opacity:.75"><span class="handler-av">${avHTML(t.createdBy.avatar,13,t.createdBy.avatar_type)}</span>${esc(t.createdBy.name)} 建立</span>`
     : '';
-  document.getElementById('dmeta').innerHTML=(t.due?dueBadge(t.due):'')+handlersHTML+creatorHTML;
+  document.getElementById('dmeta').innerHTML=(t.due?dueBadge(t.due):'')+(t.ticket?`<span class="ticket-tag" style="margin-left:6px">${esc(t.ticket)}</span>`:'')+handlersHTML+creatorHTML;
   renderDrawer(id);
   document.getElementById('dov').classList.add('open');
   setTimeout(()=>document.getElementById('cinp').focus(),200);
@@ -2860,7 +2727,6 @@ function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
 
 /* ─── HISTORY LOGGING ─── */
 function logHistory(action, task, detail=''){
-  if(viewMode === 'personal') return;
   const entry = {
     time: ts(),
     user: profile?.name || '未知使用者',
@@ -3053,14 +2919,9 @@ function connectSSE(){
       if(entry.type === 'sync'){
         const isSelf = entry.from_ip === myIP;
         if(!isSelf){
-          if(viewMode === 'personal'){
-            // 個人模式：team sync 只更新快照，不動當前畫面
-            _teamTasks = entry.tasks;
-          } else {
-            tasks = entry.tasks;
-            localStorage.setItem('tasks_v4', JSON.stringify(tasks));
-            render();
-          }
+          tasks = entry.tasks;
+          localStorage.setItem('tasks_v4', JSON.stringify(tasks));
+          render();
         }
         return;
       }

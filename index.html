@@ -429,9 +429,10 @@ mark { background: none; color: inherit; }
   border: 1px solid rgba(90,148,144,.2);
 }
 .sug-sub { font-size: .73rem; color: var(--dim); }
-.sug-ticket-btn { background:transparent; border:1px solid var(--border2); border-radius:6px; padding:2px 6px; cursor:pointer; font-size:.68rem; color:var(--dim); transition:all .15s; margin-left:auto; white-space:nowrap; }
-.sug-ticket-btn:hover { border-color:var(--acc); color:var(--acc); }
-.sug-ticket-btn.active { background:rgba(90,148,144,.15); border-color:var(--acc); color:var(--acc); }
+.sug-tag-filters { display:flex; flex-wrap:wrap; gap:4px; padding:4px 14px 6px; }
+.sug-filter-tag { background:transparent; border:1px solid var(--border2); border-radius:999px; padding:1px 8px; cursor:pointer; font-size:.65rem; color:var(--dim); transition:all .15s; white-space:nowrap; font-family:inherit; }
+.sug-filter-tag:hover { border-color:var(--acc); color:var(--acc); }
+.sug-filter-tag.active { background:rgba(90,148,144,.15); border-color:var(--acc); color:var(--acc); }
 
 .sug-list {
   flex: 1; overflow-y: auto; padding: 10px 0;
@@ -590,10 +591,17 @@ mark { background: none; color: inherit; }
 
 .comment-count { font-size:.6rem; color:var(--dim); cursor:pointer; display:inline-flex; align-items:center; gap:3px; background:var(--s2); border-radius:999px; padding:1px 6px; transition:color .15s; border:1px solid var(--border); }
 .comment-count:hover, .comment-count.has { color:var(--c); border-color:var(--c); }
-.ticket-tag { display:inline-flex; align-items:center; font-size:.58rem; padding:1px 5px; border-radius:4px; background:rgba(90,148,144,.15); color:var(--acc); border:1px solid rgba(90,148,144,.35); font-weight:700; white-space:nowrap; letter-spacing:.2px; }
-.task-actions .tb { color:var(--dim); }
-.task-actions .tb.on { color:var(--acc); background:rgba(90,148,144,.15); }
-.task-actions .tb:hover { background:rgba(90,148,144,.15); color:var(--acc); }
+.task-tag { display:inline-flex; align-items:center; font-size:.58rem; padding:1px 6px; border-radius:4px; background:rgba(90,148,144,.15); color:var(--acc); border:1px solid rgba(90,148,144,.35); font-weight:600; white-space:nowrap; }
+.tag-chips { display:flex; flex-wrap:wrap; gap:4px; }
+.tag-chip { display:inline-flex; align-items:center; gap:3px; background:rgba(90,148,144,.15); border:1px solid rgba(90,148,144,.35); border-radius:999px; padding:2px 8px 2px 10px; font-size:.72rem; color:var(--acc); font-weight:600; }
+.tag-chip-del { background:none; border:none; cursor:pointer; color:var(--acc); opacity:.6; padding:0 0 0 2px; font-size:1rem; line-height:.8; display:flex; align-items:center; }
+.tag-chip-del:hover { opacity:1; }
+.tag-input-wrap { position:relative; }
+.tag-input-wrap input { width:100%; }
+.tag-suggestions { position:absolute; top:calc(100% + 2px); left:0; right:0; background:var(--panel); border:1px solid var(--border2); border-radius:8px; box-shadow:0 4px 16px rgba(40,30,20,.12); z-index:300; max-height:160px; overflow-y:auto; }
+.tag-sug-item { padding:7px 12px; font-size:.78rem; cursor:pointer; transition:background .1s; }
+.tag-sug-item:hover { background:var(--s2); }
+.tag-sug-new { color:var(--acc); font-weight:600; }
 
 .task-actions { display:flex; gap:2px; flex-shrink:0; opacity:0; transition:opacity .15s; }
 .task-card:hover .task-actions { opacity:1; }
@@ -1083,10 +1091,10 @@ mark { background: none; color: inherit; }
         </svg>
         <h2>建議執行順序</h2>
         <span class="sug-badge" id="sug-count">0</span>
-        <button class="sug-ticket-btn" id="sug-ticket-btn" onclick="toggleSugTicket()" title="只顯示 Ticket 任務">🎫 Ticket</button>
       </div>
       <div class="sug-sub">依象限優先級 ＋ 截止日期排序</div>
     </div>
+    <div class="sug-tag-filters" id="sug-tag-filters"></div>
     <div class="sug-list" id="sug-list"></div>
   </aside>
 
@@ -1312,9 +1320,13 @@ mark { background: none; color: inherit; }
       <label>說明 <span>（選填）</span></label>
       <textarea id="idesc" placeholder="詳細說明、注意事項…" maxlength="500"></textarea>
     </div>
-    <div class="field" style="flex-direction:row;align-items:center;gap:10px">
-      <input type="checkbox" id="iticket" style="width:16px;height:16px;accent-color:var(--acc);cursor:pointer;flex-shrink:0">
-      <label for="iticket" style="cursor:pointer;margin:0">標記為 Ticket</label>
+    <div class="field" id="tag-field">
+      <label>標籤 <span>（選填）</span></label>
+      <div class="tag-chips" id="itag-chips"></div>
+      <div class="tag-input-wrap">
+        <input type="text" id="itag-input" placeholder="輸入或選擇標籤…" autocomplete="off" oninput="renderTagSuggestions()" onkeydown="handleTagKey(event)" onfocus="renderTagSuggestions()">
+        <div class="tag-suggestions" id="itag-suggestions" style="display:none"></div>
+      </div>
     </div>
     <div class="field">
       <label>
@@ -1692,13 +1704,6 @@ function setFavicon(url){
 }
 
 /* ─── HANDLER ─── */
-function toggleTicket(id,e){
-  if(e) e.stopPropagation();
-  const t=tasks.find(t=>t.id===id); if(!t) return;
-  t.ticket = !t.ticket;
-  save(); render();
-}
-
 function toggleHandler(id,e){
   if(e)e.stopPropagation();
   if(!profile){showSetup(false);return;}
@@ -2229,7 +2234,7 @@ function render(){
           ${t.desc?`<div class="task-desc">${hlText(t.desc)}</div>`:''}
           <div class="task-footer">
             ${dueBadge(t.due)}
-            ${t.ticket?`<span class="ticket-tag">🎫 Ticket</span>`:''}
+            ${(t.tags&&t.tags.length)?t.tags.map(g=>`<span class="task-tag">${esc(g)}</span>`).join(''):''}
             ${handlersHTML}
             ${t.createdBy?`<span class="creator-tag" title="由 ${esc(t.createdBy.name)} 建立"><span class="handler-av">${avHTML(t.createdBy.avatar,13,t.createdBy.avatar_type)}</span></span>`:''}
             <span class="comment-count ${cc?'has':''}" onclick="openDrawer(${t.id})" style="--c:${COLORS[q]}">
@@ -2239,9 +2244,6 @@ function render(){
           </div>
         </div>
         <div class="task-actions">
-          <button class="tb${t.ticket?' on':''}" onclick="toggleTicket(${t.id},event)" title="${t.ticket?'取消 Ticket':'標記 Ticket'}">
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
-          </button>
           <button class="hb${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'加入處理'}">
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           </button>
@@ -2256,47 +2258,7 @@ function render(){
     }).join('');
   });
 
-  // Suggested order (persistent)
-  const sorted=[...active].sort((a,b)=>{
-    const aOv=isOverdue(a.due), bOv=isOverdue(b.due);
-    if(aOv!==bOv) return aOv?-1:1;
-    if(a.q!==b.q) return a.q-b.q;
-    if(a.due&&b.due) return a.due.localeCompare(b.due);
-    if(a.due) return -1; if(b.due) return 1; return 0;
-  });
-  document.getElementById('sug-count').textContent=sorted.length;
-  const sl=document.getElementById('sug-list');
-  if(!sorted.length){
-    sl.innerHTML=searchQuery
-      ? `<div class="sug-empty" style="opacity:.6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:6px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><br>無符合結果</div>`
-      : '<div class="sug-empty">🎉 目前沒有待辦任務<br><span style="font-size:.65rem;opacity:.7">新增任務開始排程</span></div>';
-  } else {
-    sl.innerHTML=sorted.map((t,i)=>{
-      const handlers = t.handlers || (t.handler ? [t.handler] : []);
-      const isMine = profile && handlers.some(h=>h.name===profile.name);
-      const handlersAvatars = handlers.length > 0
-        ? `<div class="sug-handlers-stack" title="${handlers.map(h=>esc(h.name)).join(', ')} 處理中">${handlers.slice(0,3).map(h=>`<div class="sug-handler-avatar">${avHTML(h.avatar,32,h.avatar_type)}</div>`).join('')}</div>${handlers.length>3?`<span class="handlers-more" style="margin-left:4px">+${handlers.length-3}</span>`:''}`
-        : `<div class="sug-handler-empty" title="尚未認領"></div>`;
-      return `<div class="sug-item" onclick="openDrawer(${t.id})" style="--ic:${COLORS[t.q]}">
-        <span class="sug-rank">${i+1}</span>
-        <div class="sug-body">
-          <div class="sug-text">${hlText(t.text)}</div>
-          <div class="sug-tags">
-            <span class="sug-tag sug-qbadge" style="background:${COLORS[t.q]}18;color:${COLORS[t.q]};border-color:${COLORS[t.q]}40">${QNAMES[t.q]}</span>
-            ${isOverdue(t.due)?`<span class="sug-tag" style="background:rgba(184,114,106,.12);color:var(--q1);border-color:var(--q1gl)">⚠ 逾期</span>`:t.due?`<span class="sug-tag sug-duebadge" style="background:var(--s2);color:var(--dim);border-color:var(--border2)">📅 ${t.due}</span>`:''}
-            ${t.ticket?`<span class="ticket-tag">🎫 Ticket</span>`:''}
-          </div>
-        </div>
-        <div class="sug-right">
-          ${handlersAvatars}
-          <button class="sug-handle-btn${isMine?' on':''}" onclick="toggleHandler(${t.id},event)" title="${isMine?'取消處理中':'加入處理'}">${isMine?'處理中':'接手'}</button>
-          <button class="sug-done-btn" onclick="toggleDone(${t.id},event)" title="標記完成">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-          </button>
-        </div>
-      </div>`;
-    }).join('');
-  }
+  renderSugPanel(active);
 
   // Completed - 按時間分組
   document.getElementById('done-badge').textContent=done.length;
@@ -2378,23 +2340,44 @@ function render(){
   if(openTaskId!==null) renderDrawer(openTaskId);
 }
 
-let sugTicketOnly = false;
-function toggleSugTicket(){
-  sugTicketOnly = !sugTicketOnly;
-  document.getElementById('sug-ticket-btn').classList.toggle('active', sugTicketOnly);
+let sugFilterTags = new Set();
+let _filterTagList = [];
+
+function getAllTags(){
+  const set = new Set();
+  tasks.forEach(t => (t.tags||[]).forEach(g => set.add(g)));
+  return [...set].sort();
+}
+
+function renderTagFilters(){
+  const el = document.getElementById('sug-tag-filters');
+  if(!el) return;
+  _filterTagList = getAllTags();
+  [...sugFilterTags].forEach(g => { if(!_filterTagList.includes(g)) sugFilterTags.delete(g); });
+  if(!_filterTagList.length){ el.innerHTML=''; return; }
+  el.innerHTML = _filterTagList.map((g,i) =>
+    `<button class="sug-filter-tag${sugFilterTags.has(g)?' active':''}" onclick="toggleSugFilterTag(${i})">${esc(g)}</button>`
+  ).join('');
+}
+
+function toggleSugFilterTag(i){
+  const tag = _filterTagList[i]; if(!tag) return;
+  if(sugFilterTags.has(tag)) sugFilterTags.delete(tag);
+  else sugFilterTags.add(tag);
+  renderTagFilters();
   renderSugPanel(tasks.filter(t=>!t.done));
 }
 
 function renderSugPanel(active){
-  const filtered=active.filter(taskMatchesSearch);
-  const sorted=[...filtered].sort((a,b)=>{
+  renderTagFilters();
+  const sorted=[...active].sort((a,b)=>{
     const aOv=isOverdue(a.due), bOv=isOverdue(b.due);
     if(aOv!==bOv) return aOv?-1:1;
     if(a.q!==b.q) return a.q-b.q;
     if(a.due&&b.due) return a.due.localeCompare(b.due);
     if(a.due) return -1; if(b.due) return 1; return 0;
   });
-  const display = sugTicketOnly ? sorted.filter(t=>t.ticket) : sorted;
+  const display = sugFilterTags.size ? sorted.filter(t=>(t.tags||[]).some(g=>sugFilterTags.has(g))) : sorted;
   document.getElementById('sug-count').textContent=sorted.length;
   const sl=document.getElementById('sug-list');
   if(!display.length){
@@ -2408,13 +2391,15 @@ function renderSugPanel(active){
       const handlersAvatars = handlers.length > 0
         ? `<div class="sug-handlers-stack" title="${handlers.map(h=>esc(h.name)).join(', ')} 處理中">${handlers.slice(0,3).map(h=>`<div class="sug-handler-avatar">${avHTML(h.avatar,32,h.avatar_type)}</div>`).join('')}</div>${handlers.length>3?`<span class="handlers-more" style="margin-left:4px">+${handlers.length-3}</span>`:''}`
         : `<div class="sug-handler-empty" title="尚未認領"></div>`;
+      const tagBadges = (t.tags||[]).map(g=>`<span class="sug-tag" style="background:rgba(90,148,144,.1);color:var(--acc);border-color:rgba(90,148,144,.3)">${esc(g)}</span>`).join('');
       return `<div class="sug-item" onclick="openDrawer(${t.id})" style="--ic:${COLORS[t.q]}">
         <span class="sug-rank">${i+1}</span>
         <div class="sug-body">
           <div class="sug-text">${hlText(t.text)}</div>
           <div class="sug-tags">
+            <span class="sug-tag sug-qbadge" style="background:${COLORS[t.q]}18;color:${COLORS[t.q]};border-color:${COLORS[t.q]}40">${QNAMES[t.q]}</span>
             ${isOverdue(t.due)?`<span class="sug-tag" style="background:rgba(184,114,106,.12);color:var(--q1);border-color:var(--q1gl)">⚠ 逾期</span>`:t.due?`<span class="sug-tag sug-duebadge" style="background:var(--s2);color:var(--dim);border-color:var(--border2)">📅 ${t.due}</span>`:''}
-            ${t.ticket?`<span class="ticket-tag">🎫 Ticket</span>`:''}
+            ${tagBadges}
           </div>
         </div>
         <div class="sug-right">
@@ -2428,6 +2413,78 @@ function renderSugPanel(active){
     }).join('');
   }
 }
+
+/* ─── TAGS (modal) ─── */
+let editTags = [];
+let _tagSugs = [];
+
+function renderTagChips(){
+  const el = document.getElementById('itag-chips');
+  if(!el) return;
+  el.innerHTML = editTags.map((g,i) =>
+    `<span class="tag-chip">${esc(g)}<button class="tag-chip-del" type="button" onclick="removeEditTag(${i})">×</button></span>`
+  ).join('');
+}
+
+function removeEditTag(i){
+  editTags.splice(i,1);
+  renderTagChips();
+  renderTagSuggestions();
+}
+
+function renderTagSuggestions(){
+  const input = document.getElementById('itag-input');
+  if(!input) return;
+  const val = input.value.trim();
+  const valLow = val.toLowerCase();
+  const el = document.getElementById('itag-suggestions');
+  const existing = getAllTags().filter(g => !editTags.includes(g) && (val===''||g.toLowerCase().includes(valLow)));
+  const canNew = val && !getAllTags().map(g=>g.toLowerCase()).includes(valLow) && !editTags.map(g=>g.toLowerCase()).includes(valLow);
+  _tagSugs = existing;
+  if(!existing.length && !canNew){ el.style.display='none'; return; }
+  el.style.display='';
+  el.innerHTML = existing.map((g,i)=>`<div class="tag-sug-item" onclick="applyTagSug(${i})">${esc(g)}</div>`).join('')
+    + (canNew ? `<div class="tag-sug-item tag-sug-new" onclick="addNewTag()">+ 新增「${esc(val)}」</div>` : '');
+}
+
+function applyTagSug(i){
+  const tag = _tagSugs[i]; if(!tag) return;
+  editTags.push(tag);
+  document.getElementById('itag-input').value='';
+  document.getElementById('itag-suggestions').style.display='none';
+  renderTagChips();
+}
+
+function addNewTag(){
+  const val = document.getElementById('itag-input').value.trim();
+  if(!val || editTags.includes(val)) return;
+  editTags.push(val);
+  document.getElementById('itag-input').value='';
+  document.getElementById('itag-suggestions').style.display='none';
+  renderTagChips();
+}
+
+function handleTagKey(e){
+  if(e.key==='Enter'){
+    e.preventDefault();
+    const val = document.getElementById('itag-input').value.trim();
+    if(val){
+      if(!editTags.includes(val)) editTags.push(val);
+      document.getElementById('itag-input').value='';
+      document.getElementById('itag-suggestions').style.display='none';
+      renderTagChips();
+    }
+  } else if(e.key==='Escape'){
+    document.getElementById('itag-suggestions').style.display='none';
+  }
+}
+
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#tag-field')){
+    const el = document.getElementById('itag-suggestions');
+    if(el) el.style.display='none';
+  }
+});
 
 function renderDonePanel(done){
   document.getElementById('done-badge').textContent=done.length;
@@ -2513,13 +2570,13 @@ function openModal(id=null, defaultQ=null){
     const t=tasks.find(t=>t.id===id);
     document.getElementById('itext').value=t.text;
     document.getElementById('idesc').value=t.desc||'';
-    document.getElementById('iticket').checked=!!t.ticket;
+    editTags=[...(t.tags||[])]; renderTagChips();
     document.getElementById('idue').value=t.due||'';
     pickQ(t.q);
   } else {
     document.getElementById('itext').value='';
     document.getElementById('idesc').value='';
-    document.getElementById('iticket').checked=false;
+    editTags=[]; renderTagChips();
     document.getElementById('idue').value=today();
     pickQ(defaultQ||1);
   }
@@ -2533,7 +2590,7 @@ function saveTask(){
   if(!text){document.getElementById('itext').focus();return;}
   const desc=document.getElementById('idesc').value.trim();
   const due=document.getElementById('idue').value;
-  const ticket=document.getElementById('iticket').checked;
+  const tags=[...editTags];
   if(editId){
     const t=tasks.find(t=>t.id===editId);
     if(t){
@@ -2541,13 +2598,14 @@ function saveTask(){
       if(t.text!==text) changed.push(`名稱：${t.text} → ${text}`);
       if(t.q!==selQ) changed.push(`象限：Q${t.q} → Q${selQ}`);
       if((t.due||'')!==(due||'')) changed.push(`截止：${t.due||'無'} → ${due||'無'}`);
-      if(!!t.ticket!==ticket) changed.push(`Ticket：${t.ticket?'是':'否'} → ${ticket?'是':'否'}`);
-      t.text=text; t.desc=desc; t.due=due||null; t.q=selQ; t.ticket=ticket||false;
+      const oldTagStr=JSON.stringify([...(t.tags||[])].sort()), newTagStr=JSON.stringify([...tags].sort());
+      if(oldTagStr!==newTagStr) changed.push(`標籤：${(t.tags||[]).join(',')||'無'} → ${tags.join(',')||'無'}`);
+      t.text=text; t.desc=desc; t.due=due||null; t.q=selQ; t.tags=tags;
       logHistory('編輯任務', t, changed.join('；')||'更新說明');
     }
   } else {
     const newTask={
-      id:Date.now(),text,desc,due:due||null,ticket:ticket||null,q:selQ,done:false,comments:[],
+      id:Date.now(),text,desc,due:due||null,tags:tags,q:selQ,done:false,comments:[],
       createdBy: profile ? {name:profile.name,avatar:profile.avatar,avatar_type:profile.avatar_type||'emoji'} : null,
       createdAt: new Date().toISOString()
     };
@@ -2576,7 +2634,8 @@ function openDrawer(id){
   const creatorHTML = t.createdBy
     ? `<span class="handler-tag" style="margin-left:6px;opacity:.75"><span class="handler-av">${avHTML(t.createdBy.avatar,13,t.createdBy.avatar_type)}</span>${esc(t.createdBy.name)} 建立</span>`
     : '';
-  document.getElementById('dmeta').innerHTML=(t.due?dueBadge(t.due):'')+(t.ticket?`<span class="ticket-tag" style="margin-left:6px">${esc(t.ticket)}</span>`:'')+handlersHTML+creatorHTML;
+  const tagBadgesDrawer=(t.tags||[]).map(g=>`<span class="task-tag" style="margin-left:4px">${esc(g)}</span>`).join('');
+  document.getElementById('dmeta').innerHTML=(t.due?dueBadge(t.due):'')+tagBadgesDrawer+handlersHTML+creatorHTML;
   renderDrawer(id);
   document.getElementById('dov').classList.add('open');
   setTimeout(()=>document.getElementById('cinp').focus(),200);

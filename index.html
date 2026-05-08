@@ -114,6 +114,40 @@ header::after {
 .h-done-btn:hover { border-color: var(--done); color: var(--done); background: rgba(154,144,128,.08); }
 .h-done-btn.active { border-color: var(--done); color: var(--done); background: rgba(154,144,128,.12); }
 
+/* ─── Search ─── */
+.h-search {
+  flex: 1; min-width: 120px; max-width: 280px;
+  position: relative; display: flex; align-items: center;
+}
+.h-search-icon {
+  position: absolute; left: 8px; pointer-events: none;
+  color: var(--dim); opacity: .6; flex-shrink: 0;
+}
+.h-search input {
+  width: 100%;
+  background: var(--s2); border: 1px solid var(--border2);
+  border-radius: 8px; padding: 5px 26px 5px 28px;
+  color: var(--text); font-size: .78rem; font-family: inherit;
+  outline: none; transition: border-color .2s, box-shadow .2s;
+}
+.h-search input:focus { border-color: var(--acc); box-shadow: 0 0 0 2px rgba(90,148,144,.12); }
+.h-search input::placeholder { color: var(--dim); opacity: .7; }
+.h-search-clear {
+  position: absolute; right: 5px; background: none; border: none;
+  cursor: pointer; color: var(--dim); padding: 2px 4px;
+  border-radius: 4px; font-size: .65rem; line-height: 1;
+  display: none; transition: color .15s;
+}
+.h-search-clear.visible { display: block; }
+.h-search-clear:hover { color: var(--q1); }
+mark { background: none; color: inherit; }
+.search-hl { background: rgba(90,148,144,.28); border-radius: 2px; padding: 0 1px; }
+.search-no-result {
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 6px;
+  color: var(--dim); font-size: .75rem; opacity: .6; padding: 24px 0;
+}
+
 /* copy toast */
 .copy-toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -850,6 +884,8 @@ header::after {
   .h-done-btn { padding:6px 10px; }
   .team-name-btn { display:none; }
   .mode-toggle { display:none; }
+  .h-search { max-width:none; flex:1; order:2; }
+  .h-search input { font-size:.72rem; }
   .qcmd-panel { right: 8px; width: calc(100vw - 16px); }
 
   /* Mobile tab bar */
@@ -1002,6 +1038,13 @@ header::after {
     <div class="team-name-val" id="h-team-name">Firmware Update Team</div>
   </button>
   <div class="h-divider"></div>
+  <div class="h-search">
+    <svg class="h-search-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+      <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+    </svg>
+    <input type="search" id="h-search-input" placeholder="搜尋任務 / 留言…" autocomplete="off" oninput="onSearchInput(this.value)">
+    <button class="h-search-clear" id="h-search-clear" onclick="clearSearch()" title="清除搜尋">✕</button>
+  </div>
   <div class="user-prof" id="user-prof-btn" onclick="showSetup(true)">
     <div class="user-av" id="h-user-av"></div>
     <span class="user-name-lbl" id="h-user-name">---</span>
@@ -1685,6 +1728,7 @@ function toggleHandler(id,e){
 let tasks = [];
 let chatMessages = [];
 let selQ=1, editId=null, dragId=null, openTaskId=null, doneOpen=true, myIP='—';
+let searchQuery = '';
 let _saving = false;
 
 fetch('/api/ip').then(r=>r.json()).then(d=>{myIP=d.ip;}).catch(()=>{});
@@ -2148,11 +2192,12 @@ function isOverdue(due){ return !!due && Math.round((new Date(due)-new Date(toda
 
 /* ─── RENDER ─── */
 function render(){
-  const active=tasks.filter(t=>!t.done);
-  const done=tasks.filter(t=>t.done);
+  const active=tasks.filter(t=>!t.done && taskMatchesSearch(t));
+  const done=tasks.filter(t=>t.done && taskMatchesSearch(t));
+  const allActive=tasks.filter(t=>!t.done);
   document.getElementById('s-all').textContent=tasks.length;
-  document.getElementById('s-done').textContent=done.length;
-  document.getElementById('s-left').textContent=active.length;
+  document.getElementById('s-done').textContent=tasks.filter(t=>t.done).length;
+  document.getElementById('s-left').textContent=allActive.length;
 
   // Quadrants
   [1,2,3,4].forEach(q=>{
@@ -2160,7 +2205,9 @@ function render(){
     document.getElementById('b'+q).textContent=list.length;
     const el=document.getElementById('t'+q);
     if(!list.length){
-      el.innerHTML=`<div class="q-empty">
+      el.innerHTML=searchQuery
+        ? `<div class="search-no-result"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>無符合結果</div>`
+        : `<div class="q-empty">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
@@ -2183,8 +2230,8 @@ function render(){
           <svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <div class="task-body">
-          <div class="task-text" onclick="openDrawer(${t.id})">${esc(t.text)}</div>
-          ${t.desc?`<div class="task-desc">${esc(t.desc)}</div>`:''}
+          <div class="task-text" onclick="openDrawer(${t.id})">${hlText(t.text)}</div>
+          ${t.desc?`<div class="task-desc">${hlText(t.desc)}</div>`:''}
           <div class="task-footer">
             ${dueBadge(t.due)}
             ${(t.tags&&t.tags.length)?t.tags.map(g=>`<span class="task-tag">${esc(g)}</span>`).join(''):''}
@@ -2217,7 +2264,9 @@ function render(){
   document.getElementById('done-badge').textContent=done.length;
   const dl=document.getElementById('done-list');
   if(!done.length){
-    dl.innerHTML='<div style="display:flex;align-items:center;color:var(--dim);font-size:.72rem;opacity:.4;padding:0 4px">尚無完成任務</div>';
+    dl.innerHTML=searchQuery
+      ? '<div style="display:flex;align-items:center;color:var(--dim);font-size:.72rem;opacity:.4;padding:0 4px">無符合結果</div>'
+      : '<div style="display:flex;align-items:center;color:var(--dim);font-size:.72rem;opacity:.4;padding:0 4px">尚無完成任務</div>';
   } else {
     // 計算本週和上週的起始日期
     const now = new Date();
@@ -2259,7 +2308,7 @@ function render(){
         <div class="done-card-top" onclick="openDrawer(${t.id})" style="cursor:pointer">
           <span class="done-num">${i+1}.</span>
           <div class="done-qdot" style="background:${COLORS[t.q]}"></div>
-          <span class="done-text">${esc(t.text)}</span>
+          <span class="done-text">${hlText(t.text)}</span>
           ${handlersHTML}
           ${doneDate ? `<span class="done-date">${doneDate}</span>` : ''}
         </div>
@@ -2332,7 +2381,9 @@ function renderSugPanel(active){
   document.getElementById('sug-count').textContent=sorted.length;
   const sl=document.getElementById('sug-list');
   if(!display.length){
-    sl.innerHTML='<div class="sug-empty">🎉 目前沒有待辦任務<br><span style="font-size:.65rem;opacity:.7">新增任務開始排程</span></div>';
+    sl.innerHTML=searchQuery
+      ? `<div class="sug-empty" style="opacity:.6"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" style="margin-bottom:6px"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><br>無符合結果</div>`
+      : '<div class="sug-empty">🎉 目前沒有待辦任務<br><span style="font-size:.65rem;opacity:.7">新增任務開始排程</span></div>';
   } else {
     sl.innerHTML=display.map((t,i)=>{
       const handlers = t.handlers || (t.handler ? [t.handler] : []);
@@ -2344,7 +2395,7 @@ function renderSugPanel(active){
       return `<div class="sug-item" onclick="openDrawer(${t.id})" style="--ic:${COLORS[t.q]}">
         <span class="sug-rank">${i+1}</span>
         <div class="sug-body">
-          <div class="sug-text">${esc(t.text)}</div>
+          <div class="sug-text">${hlText(t.text)}</div>
           <div class="sug-tags">
             <span class="sug-tag sug-qbadge" style="background:${COLORS[t.q]}18;color:${COLORS[t.q]};border-color:${COLORS[t.q]}40">${QNAMES[t.q]}</span>
             ${isOverdue(t.due)?`<span class="sug-tag" style="background:rgba(184,114,106,.12);color:var(--q1);border-color:var(--q1gl)">⚠ 逾期</span>`:t.due?`<span class="sug-tag sug-duebadge" style="background:var(--s2);color:var(--dim);border-color:var(--border2)">📅 ${t.due}</span>`:''}
@@ -2700,6 +2751,7 @@ document.getElementById('setup-screen').addEventListener('click',e=>{
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
     if(document.getElementById('setup-screen').style.display!=='none'&&profile){document.getElementById('setup-screen').style.display='none';return;}
+    if(searchQuery){clearSearch();return;}
     closeModal();closeDrawer();
   }
   if(e.key==='Enter'&&document.getElementById('ov').classList.contains('open')
@@ -2710,6 +2762,44 @@ document.addEventListener('keydown',e=>{
 });
 
 function esc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+/* ─── SEARCH ─── */
+function onSearchInput(val){
+  searchQuery = val.trim().toLowerCase();
+  const clr = document.getElementById('h-search-clear');
+  if(clr) clr.classList.toggle('visible', !!searchQuery);
+  render();
+}
+function clearSearch(){
+  searchQuery = '';
+  const inp = document.getElementById('h-search-input');
+  if(inp) inp.value = '';
+  const clr = document.getElementById('h-search-clear');
+  if(clr) clr.classList.remove('visible');
+  render();
+}
+function taskMatchesSearch(t){
+  if(!searchQuery) return true;
+  const q = searchQuery;
+  if(t.text && t.text.toLowerCase().includes(q)) return true;
+  if(t.desc && t.desc.toLowerCase().includes(q)) return true;
+  if(t.comments && t.comments.some(c => c.text && c.text.toLowerCase().includes(q))) return true;
+  return false;
+}
+function hlText(str){
+  if(!searchQuery || !str) return esc(str||'');
+  const q = searchQuery;
+  const lower = str.toLowerCase();
+  let out = '', i = 0;
+  while(i < str.length){
+    const idx = lower.indexOf(q, i);
+    if(idx < 0){ out += esc(str.slice(i)); break; }
+    out += esc(str.slice(i, idx));
+    out += `<mark class="search-hl">${esc(str.slice(idx, idx+q.length))}</mark>`;
+    i = idx + q.length;
+  }
+  return out;
+}
 
 /* ─── HISTORY LOGGING ─── */
 function logHistory(action, task, detail=''){

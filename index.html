@@ -114,6 +114,58 @@ header::after {
 .h-done-btn:hover { border-color: var(--done); color: var(--done); background: rgba(154,144,128,.08); }
 .h-done-btn.active { border-color: var(--done); color: var(--done); background: rgba(154,144,128,.12); }
 
+.h-help-btn {
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 6px 14px; color: var(--dim); font-size: .8rem; font-weight: 600;
+  cursor: pointer; display: flex; align-items: center; gap: 6px;
+  transition: all .2s; font-family: inherit; background: transparent;
+  white-space: nowrap;
+}
+.h-help-btn:hover { border-color: var(--acc); color: var(--acc); background: rgba(90,148,144,.08); }
+
+/* ═══ HELP MODAL ═══ */
+.help-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(40,30,20,.35); backdrop-filter: blur(3px);
+  display: none; align-items: center; justify-content: center;
+}
+.help-overlay.open { display: flex; }
+.help-modal {
+  background: var(--panel); border: 1px solid var(--border2);
+  border-radius: 16px; box-shadow: 0 12px 40px rgba(40,30,20,.2);
+  width: min(640px, 94vw); max-height: 80vh;
+  display: flex; flex-direction: column; animation: modalIn .18s ease;
+}
+.help-head {
+  display: flex; align-items: center; padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--border2); flex-shrink: 0; gap: 10px;
+}
+.help-head h2 { flex: 1; margin: 0; font-size: 1rem; font-weight: 700; }
+.help-close {
+  background: transparent; border: none; cursor: pointer; color: var(--dim);
+  display: flex; padding: 4px; border-radius: 6px; transition: color .15s;
+}
+.help-close:hover { color: var(--text); background: var(--s2); }
+.help-body {
+  padding: 20px 22px; overflow-y: auto; flex: 1;
+  scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+  display: flex; flex-direction: column; gap: 18px;
+}
+.help-section h3 {
+  font-size: .78rem; font-weight: 700; color: var(--acc);
+  text-transform: uppercase; letter-spacing: .6px; margin: 0 0 8px;
+}
+.help-section p, .help-section li {
+  font-size: .82rem; color: var(--text); line-height: 1.65; margin: 0;
+}
+.help-section ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+.help-qrow { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.help-q {
+  border-radius: 8px; padding: 8px 12px; font-size: .78rem; line-height: 1.5;
+  border: 1px solid var(--border2);
+}
+.help-q strong { display: block; font-size: .72rem; font-weight: 700; margin-bottom: 2px; }
+
 /* ─── Search ─── */
 .h-search {
   flex: 1; min-width: 120px; max-width: 280px;
@@ -882,6 +934,8 @@ mark { background: none; color: inherit; }
   .h-add { padding:7px 10px; }
   .h-done-btn span { display:none; }
   .h-done-btn { padding:6px 10px; }
+  .h-help-btn span { display:none; }
+  .h-help-btn { padding:6px 10px; }
   .team-name-btn { display:none; }
   .mode-toggle { display:none; }
   .h-search { max-width:none; flex:1; order:2; }
@@ -1055,6 +1109,12 @@ mark { background: none; color: inherit; }
     </svg>
     <span>已完成</span>
   </button>
+  <button class="h-help-btn" onclick="toggleHelp()">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+      <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+    <span>使用手冊</span>
+  </button>
   <button class="h-add" onclick="openModal()">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
       <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -1062,6 +1122,70 @@ mark { background: none; color: inherit; }
     <span>新增任務</span>
   </button>
 </header>
+
+<!-- HELP MODAL -->
+<div class="help-overlay" id="help-overlay" onclick="closeHelp(event)">
+  <div class="help-modal">
+    <div class="help-head">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <h2>使用手冊</h2>
+      <button class="help-close" onclick="toggleHelp()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="help-body">
+      <div class="help-section">
+        <h3>四象限矩陣</h3>
+        <div class="help-qrow">
+          <div class="help-q" style="background:rgba(184,114,106,.06);border-color:rgba(184,114,106,.3)"><strong style="color:#b8726a">Q1 — 緊急且重要</strong>立即處理，優先度最高</div>
+          <div class="help-q" style="background:rgba(180,148,90,.06);border-color:rgba(180,148,90,.3)"><strong style="color:#b4945a">Q2 — 重要不緊急</strong>規劃時間處理，長期投資</div>
+          <div class="help-q" style="background:rgba(106,154,120,.06);border-color:rgba(106,154,120,.3)"><strong style="color:#6a9a78">Q3 — 緊急不重要</strong>可委派他人處理</div>
+          <div class="help-q" style="background:rgba(100,130,180,.06);border-color:rgba(100,130,180,.3)"><strong style="color:#6482b4">Q4 — 不緊急不重要</strong>低優先，考慮刪除</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <h3>任務操作</h3>
+        <ul>
+          <li><strong>新增任務</strong>：點右上角「＋ 新增任務」或直接點擊象限空白區域</li>
+          <li><strong>編輯任務</strong>：hover 任務卡片 → 點✏ 編輯，或開啟詳情後點「編輯」</li>
+          <li><strong>移動象限</strong>：拖拉任務卡片到目標象限</li>
+          <li><strong>標記完成</strong>：點任務左側圓形勾選框，或在建議面板點「✓」</li>
+          <li><strong>恢復任務</strong>：在已完成區塊拖拉卡片到象限，或點「↩ 恢復」</li>
+          <li><strong>刪除任務</strong>：hover 卡片 → 點 ✕</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>標籤（Tags）</h3>
+        <ul>
+          <li>編輯任務時可新增多個 Tag，點輸入框選現有 tag 或輸入新名稱</li>
+          <li>建議執行面板上方會出現 tag filter 按鈕，可多選篩選</li>
+          <li>當所有任務都不含某個 tag 時，該 filter 按鈕會自動消失</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>認領與協作</h3>
+        <ul>
+          <li><strong>認領任務</strong>：hover 卡片 → 點👤，或在建議面板點「接手」</li>
+          <li><strong>留言</strong>：點任務名稱開啟詳情側欄，在底部輸入留言</li>
+          <li><strong>愛心</strong>：點留言下方的 ♡ 對留言按讚，即時同步給所有人</li>
+          <li><strong>即時同步</strong>：所有操作透過 SSE 即時廣播，多人同時使用不衝突</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>建議執行順序</h3>
+        <p>右側面板依「逾期 → 象限優先級（Q1→Q4）→ 截止日期」自動排序，幫助決定當前最應處理的任務。</p>
+      </div>
+      <div class="help-section">
+        <h3>已完成</h3>
+        <ul>
+          <li>點 header「已完成」按鈕顯示 / 隱藏完成區塊</li>
+          <li>依本週 / 上週 / 更早分組，點卡片可開啟詳情</li>
+          <li>可拖拉已完成任務回象限恢復</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- MOBILE TAB BAR -->
 <nav class="mob-tabs" id="mob-tabs">
@@ -2584,6 +2708,9 @@ function openModal(id=null, defaultQ=null){
   setTimeout(()=>document.getElementById('itext').focus(),80);
 }
 function closeModal(){ document.getElementById('ov').classList.remove('open'); editId=null; }
+
+function toggleHelp(){ document.getElementById('help-overlay').classList.toggle('open'); }
+function closeHelp(e){ if(e.target===document.getElementById('help-overlay')) toggleHelp(); }
 function pickQ(q){ selQ=q; document.querySelectorAll('.q-pick').forEach(el=>el.classList.toggle('selected',+el.dataset.q===q)); }
 function saveTask(){
   const text=document.getElementById('itext').value.trim();

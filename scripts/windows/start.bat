@@ -2,11 +2,13 @@
 REM start.bat — 啟動 / 停止 Task Manager 伺服器（Windows）
 REM
 REM 用法：
-REM   start.bat              前景執行（Ctrl+C 停止）
-REM   start.bat start        背景執行
-REM   start.bat stop         停止背景伺服器
-REM   start.bat restart      重啟背景伺服器
-REM   start.bat status       查看執行狀態
+REM   start.bat [--build]            前景執行（Ctrl+C 停止）
+REM   start.bat start [--build]      背景執行
+REM   start.bat stop                 停止背景伺服器
+REM   start.bat restart [--build]    重啟背景伺服器
+REM   start.bat status               查看執行狀態
+REM
+REM   --build  啟動前先執行 npm run build 更新前端
 
 setlocal EnableDelayedExpansion
 
@@ -16,19 +18,55 @@ pushd "%SCRIPT_DIR%..\.."
 set "ROOT_DIR=%CD%"
 popd
 set "BACKEND_DIR=%ROOT_DIR%\backend"
+set "FRONTEND_DIR=%ROOT_DIR%\frontend"
 set "PID_FILE=%ROOT_DIR%\server.pid"
 set "LOG_FILE=%ROOT_DIR%\server.log"
 
-set "CMD=%~1"
+REM 解析參數：--build 可出現在任意位置
+set "BUILD=0"
+set "CMD="
+for %%a in (%*) do (
+    if /i "%%a"=="--build" (
+        set "BUILD=1"
+    ) else if not defined CMD (
+        set "CMD=%%a"
+    )
+)
 if "%CMD%"=="" set "CMD=fg"
 
+if /i "%CMD%"=="fg"      goto :maybe_build
+if /i "%CMD%"=="start"   goto :maybe_build
+if /i "%CMD%"=="stop"    goto :stop
+if /i "%CMD%"=="restart" goto :maybe_build
+if /i "%CMD%"=="status"  goto :status
+echo 用法：start.bat [start^|stop^|restart^|status] [--build]
+exit /b 1
+
+:maybe_build
+if "%BUILD%"=="1" (
+    call :build_frontend
+    if errorlevel 1 exit /b 1
+)
 if /i "%CMD%"=="fg"      goto :fg
 if /i "%CMD%"=="start"   goto :start
-if /i "%CMD%"=="stop"    goto :stop
 if /i "%CMD%"=="restart" goto :restart
-if /i "%CMD%"=="status"  goto :status
-echo 用法：start.bat [start^|stop^|restart^|status]（無參數 = 前景執行）
-exit /b 1
+goto :eof
+
+:build_frontend
+where npm >nul 2>&1
+if errorlevel 1 (
+    echo [ERROR] 找不到 npm，無法 build 前端（請先安裝 Node.js）
+    exit /b 1
+)
+echo [BUILD] Building frontend...
+call npm --prefix "%FRONTEND_DIR%" run build
+if errorlevel 1 (
+    echo [ERROR] 前端 build 失敗
+    exit /b 1
+)
+echo [OK] Frontend build 完成
+echo.
+exit /b 0
 
 :fg
 echo === Task Manager ===

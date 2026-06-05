@@ -671,6 +671,15 @@ mark { background: none; color: inherit; }
   cursor: col-resize; flex-direction: row;
   border-left: 1px solid var(--border2);
 }
+/* done panel is now below notes-area (column layout) */
+.notes-area .col-resizer--done {
+  cursor: row-resize; width: auto; height: 4px;
+  border-left: none; border-top: 1px solid var(--border2);
+}
+.notes-area .completed-section {
+  min-width: 0; min-height: 180px; max-height: 45%;
+  border-left: none; border-top: 1px solid var(--border2);
+}
 
 .done-header {
   display:flex; align-items:center; gap:9px; padding:9px 12px;
@@ -723,11 +732,13 @@ mark { background: none; color: inherit; }
 }
 .drawer-overlay.open .drawer { transform:translateX(0); }
 .drawer-head { padding:16px 20px 12px; border-bottom:1px solid var(--border); flex-shrink:0; }
-.drawer-top { display:flex; align-items:center; gap:9px; margin-bottom:8px; }
+.drawer-top { display:flex; align-items:center; gap:9px; margin-bottom:4px; }
+.drawer-actions { display:flex; align-items:center; gap:4px; margin-bottom:8px; flex-wrap:wrap; }
 .drawer-qdot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
 .drawer-qname { font-size:.7rem; color:var(--dim); }
 .drawer-edit { background:transparent; border:none; height:26px; padding:0 8px; gap:5px; border-radius:6px; cursor:pointer; color:var(--dim); font-size:.72rem; display:flex; align-items:center; justify-content:center; transition:all .15s; }
 .drawer-edit:hover { background:var(--s2); color:var(--acc); }
+.drawer-del-task:hover { background:var(--q1bg) !important; color:var(--q1) !important; }
 .drawer-close { margin-left:auto; background:transparent; border:none; width:26px; height:26px; border-radius:6px; cursor:pointer; color:var(--dim); display:flex; align-items:center; justify-content:center; transition:all .15s; }
 .drawer-close:hover { background:var(--s2); color:var(--text); }
 .drawer-title { font-size:1rem; font-weight:600; line-height:1.4; }
@@ -1065,7 +1076,8 @@ mark { background: none; color: inherit; }
 .note-card-del:hover { background: var(--q1bg); color: var(--q1); }
 
 /* ── Note Checklist Card ── */
-.note-cl-item { display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--dim); padding: 3px 0; line-height: 1.4; }
+.note-cl-item { display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--dim); padding: 3px 0; line-height: 1.4; cursor: pointer; border-radius: 4px; }
+.note-cl-item:hover { background: rgba(0,0,0,.04); }
 .note-cl-item.done .note-cl-text { text-decoration: line-through; opacity: .45; }
 .note-cl-icon { flex-shrink: 0; display: flex; align-items: center; }
 .note-cl-icon svg { display: block; }

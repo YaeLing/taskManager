@@ -22,3 +22,17 @@
     <div class="notes-empty">點擊「＋ 新增」建立第一張便條紙</div>
   </div>
 </div>
+
+<!-- COMPLETED TASKS (toggled by header 已完成 button) -->
+<div class="col-resizer col-resizer--done" id="resizer-done" style="display:none"></div>
+<div class="completed-section" id="done-section" style="display:none">
+  <div class="done-header" id="done-header">
+    <div class="done-dot"></div>
+    <span class="done-title">已完成</span>
+    <span class="done-badge" id="done-badge">0</span>
+  </div>
+  <div class="done-tasks" id="done-list"
+       ondragover="onDoneDragOver(event)" ondrop="onDoneDrop(event)"
+       ondragleave="document.getElementById('done-list').classList.remove('drag-over')">
+  </div>
+</div>

@@ -5,6 +5,13 @@
       <div class="drawer-top">
         <div class="drawer-qdot" id="dqdot"></div>
         <span class="drawer-qname" id="dqname"></span>
+        <button class="drawer-close" onclick="closeDrawer()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="drawer-actions">
         <button class="drawer-edit" onclick="openModal(openTaskId)" title="編輯">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -17,10 +24,10 @@
             <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
           </svg>複製連結
         </button>
-        <button class="drawer-close" onclick="closeDrawer()">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
+        <button class="drawer-edit drawer-del-task" onclick="delTask(openTaskId)" title="刪除任務">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+          </svg>刪除任務
         </button>
       </div>
       <div class="drawer-title" id="dtitle" contenteditable="plaintext-only" data-placeholder="任務名稱"

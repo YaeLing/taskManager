@@ -10,23 +10,24 @@
     </div>
     <div class="help-body">
       <div class="help-section">
-        <h3>四象限矩陣</h3>
-        <div class="help-qrow">
-          <div class="help-q" style="background:rgba(184,114,106,.06);border-color:rgba(184,114,106,.3)"><strong style="color:#b8726a">Q1 — 緊急且重要</strong>立即處理，優先度最高</div>
-          <div class="help-q" style="background:rgba(180,148,90,.06);border-color:rgba(180,148,90,.3)"><strong style="color:#b4945a">Q2 — 重要不緊急</strong>規劃時間處理，長期投資</div>
-          <div class="help-q" style="background:rgba(106,154,120,.06);border-color:rgba(106,154,120,.3)"><strong style="color:#6a9a78">Q3 — 緊急不重要</strong>可委派他人處理</div>
-          <div class="help-q" style="background:rgba(100,130,180,.06);border-color:rgba(100,130,180,.3)"><strong style="color:#6482b4">Q4 — 不緊急不重要</strong>低優先，考慮刪除</div>
-        </div>
+        <h3>便條紙看板</h3>
+        <ul>
+          <li><strong>新增便條紙</strong>：點中欄右上角「＋ 新增」，選擇類型：純文字 / 標題+內文 / 待辦清單</li>
+          <li><strong>編輯便條紙</strong>：點卡片開啟編輯器，修改後點「儲存」</li>
+          <li><strong>切換待辦項目</strong>：待辦清單卡片可直接點 checkbox，無需開啟編輯器</li>
+          <li><strong>刪除便條紙</strong>：hover 卡片 → 點右上角 ✕；或在編輯器內點「刪除」</li>
+          <li><strong>顏色</strong>：編輯器底部可選 9 種顏色</li>
+          <li>便條紙為個人私有，每人上限 30 張</li>
+        </ul>
       </div>
       <div class="help-section">
         <h3>任務操作</h3>
         <ul>
-          <li><strong>新增任務</strong>：點右上角「＋ 新增任務」或直接點擊象限空白區域</li>
-          <li><strong>編輯任務</strong>：hover 任務卡片 → 點✏ 編輯，或開啟詳情後點「編輯」</li>
-          <li><strong>移動象限</strong>：拖拉任務卡片到目標象限</li>
-          <li><strong>標記完成</strong>：點任務左側圓形勾選框，或在建議面板點「✓」</li>
-          <li><strong>恢復任務</strong>：在已完成區塊拖拉卡片到象限，或點「↩ 恢復」</li>
-          <li><strong>刪除任務</strong>：hover 卡片 → 點 ✕</li>
+          <li><strong>新增任務</strong>：點右上角「＋ 新增任務」</li>
+          <li><strong>編輯任務</strong>：點任務名稱開啟詳情側欄 → 第二行「編輯」按鈕</li>
+          <li><strong>標記完成</strong>：點建議面板左側圓形勾選框，或點「✓」</li>
+          <li><strong>恢復任務</strong>：在已完成區塊點「↩ 恢復」</li>
+          <li><strong>刪除任務</strong>：開啟詳情側欄 → 第二行「刪除任務」按鈕</li>
         </ul>
       </div>
       <div class="help-section">
@@ -40,7 +41,7 @@
       <div class="help-section">
         <h3>認領與協作</h3>
         <ul>
-          <li><strong>認領任務</strong>：hover 卡片 → 點👤，或在建議面板點「接手」</li>
+          <li><strong>認領任務</strong>：在建議面板點「接手」</li>
           <li><strong>留言</strong>：點任務名稱開啟詳情側欄，在底部輸入留言</li>
           <li><strong>愛心</strong>：點留言下方的 ♡ 對留言按讚，即時同步給所有人</li>
           <li><strong>即時同步</strong>：所有操作透過 SSE 即時廣播，多人同時使用不衝突</li>
@@ -53,9 +54,9 @@
       <div class="help-section">
         <h3>已完成</h3>
         <ul>
-          <li>點 header「已完成」按鈕顯示 / 隱藏完成區塊</li>
+          <li>點 header「已完成」按鈕顯示 / 隱藏完成面板（位於便條紙下方）</li>
           <li>依本週 / 上週 / 更早分組，點卡片可開啟詳情</li>
-          <li>可拖拉已完成任務回象限恢復</li>
+          <li>可拖拉已完成任務回建議面板恢復</li>
         </ul>
       </div>
       <div class="help-section">
@@ -70,7 +71,7 @@
         <h3>分享連結</h3>
         <ul>
           <li>每個任務都有獨立 URL（<code>/:taskId</code>），可直接連結到特定任務</li>
-          <li>開啟詳情側欄後點「🔗」按鈕一鍵複製連結</li>
+          <li>開啟詳情側欄後點「複製連結」一鍵複製</li>
           <li>貼給隊友後對方開啟頁面會自動跳至該任務</li>
         </ul>
       </div>

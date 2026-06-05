@@ -1893,12 +1893,11 @@ function toggleDonePanel(){
   const section = document.getElementById('done-section');
   const resizer = document.getElementById('resizer-done');
   const btn = document.getElementById('h-done-btn');
-  const matrix = document.querySelector('.matrix');
+  if(!section) return;
   doneVisible = !doneVisible;
   section.style.display = doneVisible ? '' : 'none';
   if(resizer) resizer.style.display = doneVisible ? '' : 'none';
-  btn.classList.toggle('active', doneVisible);
-  if(matrix) matrix.classList.toggle('grid-mode', !doneVisible);
+  if(btn) btn.classList.toggle('active', doneVisible);
 }
 
 /* ─── TASK URL ─── */
@@ -2373,8 +2372,9 @@ function noteCardHTML(n) {
     body = `
       ${n.title ? `<div class="note-card-title">${esc(n.title)}</div>` : ''}
       <div>
-        ${items.map(it => `
-          <div class="note-cl-item ${it.done ? 'done' : ''}">
+        ${items.map((it, i) => `
+          <div class="note-cl-item ${it.done ? 'done' : ''}"
+               onclick="event.stopPropagation();toggleNoteItem('${n.id}',${i})">
             <span class="note-cl-icon">${it.done
               ? `<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x=".5" y=".5" width="13" height="13" rx="3" fill="var(--acc)" stroke="var(--acc)"/><polyline points="3,7 6,10 11,4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
               : `<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x=".5" y=".5" width="13" height="13" rx="3" stroke="var(--border2)" stroke-width="1.2"/></svg>`
@@ -2518,4 +2518,13 @@ function closeNoteModal() {
   document.getElementById('note-edit-ov').classList.remove('active');
   _editNote = null;
   _noteClItems = [];
+}
+
+async function toggleNoteItem(noteId, itemIdx) {
+  if (!profile) return;
+  const note = _notes.find(n => n.id === noteId);
+  if (!note || !note.items || !note.items[itemIdx]) return;
+  note.items[itemIdx].done = !note.items[itemIdx].done;
+  await API.saveNotes(profile.name, _notes);
+  renderNotes();
 }

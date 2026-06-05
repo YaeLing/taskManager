@@ -2,23 +2,44 @@
 # start.sh — 啟動 / 停止 Task Manager 伺服器（Linux / macOS）
 #
 # 用法：
-#   ./start.sh            # 前景執行（Ctrl+C 停止）
-#   ./start.sh start      # 背景執行
-#   ./start.sh stop       # 停止背景執行的伺服器
-#   ./start.sh restart    # 重啟背景伺服器
-#   ./start.sh status     # 查看執行狀態
+#   ./start.sh [--build]          # 前景執行（Ctrl+C 停止）
+#   ./start.sh start [--build]    # 背景執行
+#   ./start.sh stop               # 停止背景執行的伺服器
+#   ./start.sh restart [--build]  # 重啟背景伺服器
+#   ./start.sh status             # 查看執行狀態
+#
+#   --build  啟動前先執行 npm run build 更新前端
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
+FRONTEND_DIR="$ROOT_DIR/frontend"
 PID_FILE="$ROOT_DIR/server.pid"
 LOG_FILE="$ROOT_DIR/server.log"
 PYTHON=$(command -v python3 || command -v python)
+
+# Parse --build flag (可出現在任意位置)
+BUILD=0
+ARGS=()
+for arg in "$@"; do
+  if [ "$arg" = "--build" ]; then BUILD=1; else ARGS+=("$arg"); fi
+done
 
 if [ -z "$PYTHON" ]; then
   echo "❌ 找不到 Python，請先執行 ./setup.sh"
   exit 1
 fi
+
+_build_frontend() {
+  if ! command -v npm &>/dev/null; then
+    echo "❌ 找不到 npm，無法 build 前端（請先安裝 Node.js）"
+    exit 1
+  fi
+  echo "🔨 Building frontend..."
+  npm --prefix "$FRONTEND_DIR" run build
+  echo "✅ Frontend build 完成"
+  echo ""
+}
 
 _start_fg() {
   echo "=== Task Manager ==="
@@ -75,14 +96,16 @@ _status() {
   fi
 }
 
-case "${1:-fg}" in
+[ "$BUILD" = "1" ] && _build_frontend
+
+case "${ARGS[0]:-fg}" in
   ""  | fg)   _start_fg   ;;
   start)      _start_bg   ;;
   stop)       _stop       ;;
   restart)    _stop; sleep 1; _start_bg ;;
   status)     _status     ;;
   *)
-    echo "用法：$0 [start|stop|restart|status]（無參數 = 前景執行）"
+    echo "用法：$0 [start|stop|restart|status] [--build]"
     exit 1
     ;;
 esac

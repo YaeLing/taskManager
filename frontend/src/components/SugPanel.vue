@@ -14,35 +14,51 @@
     <!-- Tag filters -->
     <div class="sug-tag-filters" v-if="tasksStore.allTags.length">
       <button v-for="tag in tasksStore.allTags" :key="tag"
-              class="sug-tag-btn" :class="{ active: tasksStore.sugFilterTags.has(tag) }"
+              class="sug-filter-tag" :class="{ active: tasksStore.sugFilterTags.has(tag) }"
               @click="tasksStore.toggleSugFilter(tag)">{{ tag }}</button>
     </div>
 
     <!-- Task list -->
     <div class="sug-list">
-      <div v-if="!tasksStore.sugTasks.length" class="sug-empty" style="color:var(--dim);font-size:.75rem;padding:16px;text-align:center">
+      <div v-if="!tasksStore.sugTasks.length" class="sug-empty"
+           style="color:var(--dim);font-size:.75rem;padding:16px;text-align:center">
         {{ tasksStore.searchQuery ? '無符合結果' : '目前沒有待辦任務' }}
       </div>
       <div v-for="(t, i) in tasksStore.sugTasks" :key="t.id"
-           class="sug-item" :class="{ overdue: isOverdue(t.due) }"
+           class="sug-item" :style="{ '--ic': COLORS[t.q] }"
            @click="$emit('openDrawer', t.id)">
-        <span class="sug-num">{{ i + 1 }}.</span>
-        <button class="sug-check" @click.stop="onDone(t)">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-            <polyline points="20 6 9 17 4 12"/>
-          </svg>
-        </button>
-        <div class="sug-info">
+        <span class="sug-rank">{{ i + 1 }}</span>
+        <div class="sug-body">
           <div class="sug-text" v-html="highlight(t.text)"></div>
-          <div class="sug-meta">
-            <span class="sug-qdot" :style="{ background: COLORS[t.q] }"></span>
-            <span v-if="t.due" class="sug-due" :class="{ 'due-red': isOverdue(t.due) }">{{ t.due }}</span>
-            <span v-for="tag in (t.tags || [])" :key="tag" class="tag-pill">{{ tag }}</span>
+          <div class="sug-tags">
+            <span class="sug-tag sug-qbadge"
+                  :style="{ background: COLORS[t.q] + '18', color: COLORS[t.q], borderColor: COLORS[t.q] + '40' }">
+              {{ QNAMES[t.q] }}
+            </span>
+            <span v-if="isOverdue(t.due)" class="sug-tag"
+                  style="background:rgba(184,114,106,.12);color:var(--q1);border-color:var(--q1gl)">⚠ 逾期</span>
+            <span v-else-if="t.due" class="sug-tag sug-duebadge"
+                  style="background:var(--s2);color:var(--dim);border-color:var(--border2)">📅 {{ t.due }}</span>
+            <span v-for="tag in (t.tags || [])" :key="tag" class="sug-tag"
+                  style="background:rgba(90,148,144,.1);color:var(--acc);border-color:rgba(90,148,144,.3)">{{ tag }}</span>
           </div>
         </div>
-        <div class="sug-actions">
-          <button class="sug-claim" @click.stop="onClaim(t)" :title="isMine(t) ? '取消認領' : '接手'">
-            {{ isMine(t) ? '✓我' : '接手' }}
+        <div class="sug-right">
+          <div v-if="handlers(t).length" class="sug-handlers-stack"
+               :title="handlers(t).map(h => h.name).join(', ') + ' 處理中'">
+            <div v-for="h in handlers(t).slice(0, 3)" :key="h.name" class="sug-handler-avatar"
+                 v-html="avHTML(h.avatar, 32, h.avatar_type)"></div>
+          </div>
+          <div v-else class="sug-handler-empty" title="尚未認領"></div>
+          <span v-if="handlers(t).length > 3" class="handlers-more" style="margin-left:4px">+{{ handlers(t).length - 3 }}</span>
+          <button class="sug-handle-btn" :class="{ on: isMine(t) }"
+                  @click.stop="onClaim(t)" :title="isMine(t) ? '取消處理中' : '接手'">
+            {{ isMine(t) ? '處理中' : '接手' }}
+          </button>
+          <button class="sug-done-btn" @click.stop="onDone(t)" title="標記完成">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
           </button>
         </div>
       </div>
@@ -54,9 +70,9 @@
 import { useTasksStore } from '../stores/tasks.js'
 import { useUserStore }  from '../stores/user.js'
 import { useWeeklyStore } from '../stores/weekly.js'
-import { COLORS, isOverdue } from '../composables/useAvatar.js'
+import { COLORS, QNAMES, avHTML, isOverdue } from '../composables/useAvatar.js'
 
-const emit = defineEmits(['openDrawer'])
+defineEmits(['openDrawer'])
 
 const tasksStore  = useTasksStore()
 const userStore   = useUserStore()
@@ -68,9 +84,13 @@ function highlight(text) {
   return (text || '').replace(new RegExp(q, 'gi'), m => `<mark class="hl">${m}</mark>`)
 }
 
+function handlers(t) {
+  return t.handlers || (t.handler ? [t.handler] : [])
+}
+
 function isMine(t) {
   const name = userStore.profile?.name
-  return name && (t.handlers || []).some(h => h.name === name)
+  return name && handlers(t).some(h => h.name === name)
 }
 
 function onDone(t) {

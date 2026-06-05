@@ -28,7 +28,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, provide } from 'vue'
+import { ref, onMounted, provide, watch, nextTick } from 'vue'
+import { initResizers } from './composables/useResizers.js'
 import { useUserStore }  from './stores/user.js'
 import { useTasksStore } from './stores/tasks.js'
 import { useNotesStore } from './stores/notes.js'
@@ -105,11 +106,25 @@ onMounted(async () => {
   // SSE
   sseStore.connect()
 
+  // Column resizers (wait for DOM)
+  await nextTick()
+  initResizers()
+
   // Deep-link: open drawer if URL contains task id
   const pathId = parseInt(location.pathname.replace('/', ''))
   if (pathId) {
     const t = tasksStore.tasks.find(t => t.id === pathId)
     if (t) openDrawer(pathId)
   }
+})
+
+// Re-bind the done-column resizer whenever the completed panel appears
+watch(() => tasksStore.doneVisible, async (visible) => {
+  if (visible) { await nextTick(); initResizers() }
+})
+
+// Re-apply resizers when switching back to desktop width
+window.addEventListener('resize', () => {
+  if (!window.matchMedia('(max-width: 639px)').matches) initResizers()
 })
 </script>

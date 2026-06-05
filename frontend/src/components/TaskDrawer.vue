@@ -59,22 +59,23 @@
 
       <div class="comments-list">
         <div v-for="(c, i) in (task.comments || [])" :key="i" class="comment-item">
-          <div class="comment-user-av" v-html="avHTML(c.avatar, 34, c.avatar_type)"></div>
-          <div class="comment-body">
-            <div class="comment-meta">
-              <span class="comment-name">{{ c.name }}</span>
+          <div class="comment-meta">
+            <div class="comment-user-av" v-html="avHTML(c.avatar, 28, c.avatar_type)"></div>
+            <div class="comment-user-info">
+              <span class="comment-user-name">{{ c.name }}</span>
               <span class="comment-time">{{ fmtTime(c.time) }}</span>
             </div>
-            <div class="comment-text">{{ c.text }}</div>
-            <div class="comment-actions">
-              <button class="comment-like" @click="toggleLike(i)">
-                ♡ {{ (c.likes || []).length || '' }}
-              </button>
-              <button v-if="c.name === userStore.profile?.name" class="comment-del"
-                      @click="tasksStore.tasks.find(t => t.id === task.id)?.comments?.splice(i, 1); tasksStore.save()">
-                刪除留言
-              </button>
-            </div>
+          </div>
+          <div class="comment-text">{{ c.text }}</div>
+          <div class="comment-foot">
+            <button class="comment-like" :class="{ liked: isLiked(c) }" @click="toggleLike(i)">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+              </svg>
+              {{ (c.likes || []).length || '' }}
+            </button>
+            <button v-if="c.name === userStore.profile?.name" class="comment-del"
+                    @click="delComment(i)">刪除留言</button>
           </div>
         </div>
       </div>
@@ -154,5 +155,14 @@ function toggleLike(commentIdx) {
   tasksStore.toggleLike(task.value.id, commentIdx, {
     name: userStore.profile.name, ip: ''
   })
+}
+
+function isLiked(c) {
+  return (c.likes || []).some(l => l.name === userStore.profile?.name)
+}
+
+function delComment(i) {
+  const t = tasksStore.tasks.find(t => t.id === task.value?.id)
+  if (t?.comments) { t.comments.splice(i, 1); tasksStore.save() }
 }
 </script>

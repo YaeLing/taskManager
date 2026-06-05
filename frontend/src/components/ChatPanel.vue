@@ -8,10 +8,13 @@
       </div>
       <div class="rockets-list">
         <div v-if="!pointsStore.leaderboard.length" class="rockets-empty">尚無紀錄</div>
-        <div v-for="(item, i) in pointsStore.leaderboard" :key="item.name" class="rocket-item">
-          <span class="rocket-rank">{{ i + 1 }}</span>
-          <span class="rocket-name">{{ item.name }}</span>
-          <span class="rocket-count">🚀 × {{ item.count }}</span>
+        <div v-for="item in pointsStore.leaderboard" :key="item.name" class="rocket-row">
+          <div class="rocket-av" v-html="rocketAv(item.name)"></div>
+          <span class="rocket-name" :title="item.name">{{ item.name }}</span>
+          <div class="rocket-bar-wrap">
+            <div class="rocket-bar" :style="{ width: barPct(item.count) + '%' }"></div>
+          </div>
+          <span class="rocket-count">🚀{{ item.count }}</span>
         </div>
       </div>
     </div>
@@ -24,11 +27,17 @@
       </div>
       <div class="leave-list">
         <div v-if="!leavesStore.leaves.length" class="leave-empty">目前無人請假</div>
-        <div v-for="l in leavesStore.leaves" :key="l.name + l.date" class="leave-item">
-          <span class="leave-name">{{ l.name }}</span>
-          <span class="leave-date">{{ l.date }}{{ l.endDate && l.endDate !== l.date ? ` ～ ${l.endDate}` : '' }}</span>
-          <span v-if="l.note" class="leave-note">{{ l.note }}</span>
-          <button v-if="isMyLeave(l)" class="leave-del" @click="removeLeave(l)" title="取消">✕</button>
+        <div v-for="l in leavesStore.leaves" :key="l.name + l.date"
+             class="leave-row" :class="{ 'leave-today': isToday(l) }">
+          <div class="leave-av" v-html="avHTML(l.avatar, 20, l.avatar_type)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:5px">
+              <span class="leave-name">{{ l.name }}</span>
+              <span class="leave-date">{{ dateLabel(l) }}</span>
+            </div>
+            <div v-if="l.note" class="leave-note">{{ l.note }}</div>
+          </div>
+          <button v-if="isMyLeave(l)" class="leave-del" @click="removeLeave(l)" title="取消請假">✕</button>
         </div>
       </div>
     </div>
@@ -49,14 +58,15 @@
         還沒有留言<br>
         <span style="font-size:.65rem;opacity:.7">發送第一則訊息開始討論</span>
       </div>
-      <div v-for="(msg, i) in chatStore.messages" :key="i" class="chat-msg">
-        <div class="chat-av" v-html="msgAv(msg)"></div>
-        <div class="chat-body">
-          <div class="chat-meta">
-            <span class="chat-name">{{ msg.name }}</span>
-            <span class="chat-time">{{ fmtTime(msg.time) }}</span>
+      <div v-for="(msg, i) in chatStore.messages" :key="i"
+           class="chat-msg" :class="{ mine: isMine(msg) }">
+        <div class="chat-msg-av" v-html="msgAv(msg)"></div>
+        <div class="chat-msg-body">
+          <div class="chat-msg-meta">
+            <span class="chat-msg-name">{{ msg.name }}</span>
+            <span class="chat-msg-time">{{ fmtTime(msg.time) }}</span>
           </div>
-          <div class="chat-text">{{ msg.text }}</div>
+          <div class="chat-msg-text">{{ msg.text }}</div>
         </div>
       </div>
     </div>
@@ -73,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, computed } from 'vue'
 import { useChatStore }   from '../stores/chat.js'
 import { useLeavesStore } from '../stores/leaves.js'
 import { usePointsStore } from '../stores/points.js'
@@ -85,8 +95,18 @@ const leavesStore = useLeavesStore()
 const pointsStore = usePointsStore()
 const userStore   = useUserStore()
 
-const chatInput = ref('')
+const chatInput  = ref('')
 const chatListEl = ref(null)
+
+const maxRockets = computed(() =>
+  Math.max(1, ...pointsStore.leaderboard.map(i => i.count))
+)
+function barPct(count) { return Math.round((count / maxRockets.value) * 100) }
+
+function rocketAv(name) {
+  const u = Object.values(userStore.allUsers).find(u => u.name === name)
+  return u ? avHTML(u.avatar, 22, u.avatar_type) : avHTML('🚀', 22, 'emoji')
+}
 
 watch(() => chatStore.messages.length, () => nextTick(() => {
   if (chatListEl.value) chatListEl.value.scrollTop = chatListEl.value.scrollHeight
@@ -99,20 +119,28 @@ async function send() {
   await chatStore.send(t, userStore.profile)
 }
 
+function isMine(msg) { return msg.name === userStore.profile?.name }
+
 function msgAv(msg) {
-  return avHTML(msg.avatar, 32, msg.avatar_type || 'emoji')
+  if (msg.avatar) return avHTML(msg.avatar, 28, msg.avatar_type || 'emoji')
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>'
 }
 
 function fmtTime(iso) {
   if (!iso) return ''
-  return new Date(iso).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
+  const d = new Date(iso)
+  if (isNaN(d)) return iso
+  return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
 }
 
-function isMyLeave(l) {
-  return l.name === userStore.profile?.name
+function dateLabel(l) {
+  if (l.endDate && l.endDate !== l.date) return `${l.date} ～ ${l.endDate}`
+  return l.date
 }
-
-async function removeLeave(l) {
-  await leavesStore.remove(l.name, l.date)
+function isToday(l) {
+  const today = new Date().toISOString().slice(0, 10)
+  return l.date <= today && (l.endDate || l.date) >= today
 }
+function isMyLeave(l) { return l.name === userStore.profile?.name }
+async function removeLeave(l) { await leavesStore.remove(l.name, l.date) }
 </script>

@@ -8,7 +8,7 @@
       <div class="setup-section-lbl">選擇大頭貼</div>
       <div class="av-grid">
         <div v-for="av in allAvatars" :key="av"
-             class="av-item" :class="{ selected: selAv === av && selAvType === 'emoji' }"
+             class="av-opt" :class="{ sel: selAv === av && selAvType === 'emoji' }"
              @click="selectEmoji(av)" v-html="emojiAvHTML(av)">
         </div>
       </div>

@@ -66,17 +66,17 @@
           </div>
           <div v-for="(t, i) in groupedDone" :key="t.id || t._group">
             <div v-if="t._group" class="done-group-label">{{ t._group }}</div>
-            <div v-else class="done-card"
-                 draggable="true"
-                 @dragstart="onDoneDragStart(t.id)"
-                 @click="$emit('openDrawer', t.id)">
-              <div class="done-card-top">
+            <div v-else class="done-card" draggable="true"
+                 @dragstart="onDoneDragStart(t.id)">
+              <div class="done-card-top" style="cursor:pointer" @click="$emit('openDrawer', t.id)">
                 <span class="done-num">{{ t._idx + 1 }}.</span>
                 <div class="done-qdot" :style="{ background: COLORS[t.q] }"></div>
                 <span class="done-text">{{ t.text }}</span>
+                <span v-if="t.doneAt" class="done-date">{{ t.doneAt.slice(0, 10) }}</span>
               </div>
-              <div class="done-card-actions">
-                <button class="done-restore" @click.stop="restore(t)">↩ 恢復</button>
+              <div class="done-card-bot">
+                <button class="done-btn" @click.stop="restore(t)">↩ 恢復</button>
+                <span class="done-btn" style="cursor:pointer" @click.stop="$emit('openDrawer', t.id)">💬 {{ (t.comments || []).length }}</span>
                 <button class="done-del" @click.stop="tasksStore.deleteTask(t.id)">✕</button>
               </div>
             </div>

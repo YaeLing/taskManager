@@ -30,17 +30,34 @@ scripts\windows\setup.bat
 ### 2. 啟動伺服器
 
 ```bash
-# Linux / macOS — 前景執行
-bash scripts/linux/start.sh
+# Linux / macOS
+bash scripts/linux/start.sh          # 前景執行（Ctrl+C 停止）
+bash scripts/linux/start.sh start    # 背景執行
 
-# Linux / macOS — 背景執行
-bash scripts/linux/start.sh start
-
-# Windows — 前景執行
-scripts\windows\start.bat
+# Windows
+scripts\windows\start.bat            REM 前景執行
+scripts\windows\start.bat start      REM 背景執行
 ```
 
 開啟瀏覽器訪問 `http://localhost:8080`
+局域網內其他裝置：`http://<主機IP>:8080`
+
+---
+
+## 啟動腳本指令一覽
+
+| 指令 | Linux / macOS | Windows |
+|------|---------------|---------|
+| 前景執行 | `start.sh` | `start.bat` |
+| 背景執行 | `start.sh start` | `start.bat start` |
+| 停止 | `start.sh stop` | `start.bat stop` |
+| 重啟 | `start.sh restart` | `start.bat restart` |
+| 查看狀態 | `start.sh status` | `start.bat status` |
+| 重新 build 後啟動 | `start.sh start --build` | `start.bat start --build` |
+
+> 背景模式日誌輸出至 `server.log`，PID 記錄於 `server.pid`。
+> 預設監聽 `0.0.0.0:8080`，可在 `backend/server.py` 頂部修改 `HOST` / `PORT`。
+> API 互動文件（Swagger UI）：`http://localhost:8080/docs`
 
 ---
 
@@ -49,102 +66,39 @@ scripts\windows\start.bat
 ### 1. 安裝所有套件（Python + Node.js）
 
 ```bash
+# Linux / macOS
 bash scripts/linux/setup.sh --dev
+
+# Windows
+scripts\windows\setup.bat --dev
 ```
 
-### 2. 啟動（兩個 terminal）
+### 2. 開發模式（HMR 熱更新）
+
+開兩個 terminal，前端改動即時反映、不需重整：
 
 ```bash
 # Terminal 1：FastAPI（API server，port 8080）
-python3 backend/server.py
-
-# Terminal 2：Vite dev server（HMR 熱更新，port 5173）
-cd frontend && npm run dev
-```
-
-訪問 `http://localhost:5173`，修改 `.vue` 元件即時更新。
-
-### 3. Build 前端（更新 dist/）
-
-```bash
-cd frontend && npm run build
-# 或透過 start.sh
-bash scripts/linux/start.sh --build
-```
-
----
-
-## 其他指令
-
-```bash
-bash scripts/linux/start.sh stop      # 停止背景伺服器
-bash scripts/linux/start.sh restart   # 重啟
-bash scripts/linux/start.sh status    # 查看狀態
-bash scripts/linux/start.sh restart --build  # 重新 build 後重啟
-```
-
-> API 互動文件（Swagger UI）：`http://localhost:8080/docs`
-
-### Windows
-
-```bat
-scripts\windows\start.bat start    REM 背景執行
-scripts\windows\start.bat stop     REM 停止
-scripts\windows\start.bat restart  REM 重啟
-scripts\windows\start.bat status   REM 查看狀態
-```
-
----
-
-## Start — 啟動伺服器（完整指令表）
-
-### Linux / macOS
-
-```bash
-# 前景執行（Ctrl+C 停止）
-bash scripts/linux/start.sh
-
-# 背景執行
-bash scripts/linux/start.sh start
-
-# 停止背景伺服器
-bash scripts/linux/start.sh stop
-
-# 重啟背景伺服器
-bash scripts/linux/start.sh restart
-
-# 查看執行狀態
-bash scripts/linux/start.sh status
-
-# 重新 build 前端後啟動
-bash scripts/linux/start.sh start --build
-```
-
-啟動後開啟瀏覽器訪問：`http://localhost:8080`
-
-### 前端開發模式（HMR 熱更新）
-
-```bash
-# Terminal 1：FastAPI
 python3 backend/server.py
 
 # Terminal 2：Vite dev server（port 5173）
 cd frontend && npm run dev
 ```
 
-訪問 `http://localhost:5173`，修改 Vue 元件即時更新，不需重整。
+訪問 `http://localhost:5173`，修改 `.vue` 元件即時更新。
+（Vite 會自動把 `/api`、`/avatars`、`/weekly_data` 代理到 :8080）
 
-### 前端 Build
+### 3. Build 前端（更新 `dist/`）
+
+修改前端後，需重新 build 才會反映到生產的 `http://localhost:8080`：
 
 ```bash
-cd frontend && npm run build
-# 產出至 dist/，FastAPI 會自動 serve
+cd frontend && npm run build      # 產出至 dist/
+
+# 或透過 start 腳本一併重啟
+bash scripts/linux/start.sh restart --build   # Linux / macOS
+scripts\windows\start.bat restart --build      REM Windows
 ```
-
-局域網內其他裝置：`http://<主機IP>:8080`
-
-> 背景模式的日誌輸出至 `server.log`，PID 記錄於 `server.pid`。
-> 預設監聽 `0.0.0.0:8080`，可在 `backend/server.py` 頂部修改 `HOST` / `PORT`。
 
 ---
 

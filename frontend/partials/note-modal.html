@@ -1,0 +1,55 @@
+<!-- Note Type Picker -->
+<div class="note-type-ov" id="note-type-ov" onclick="if(event.target===this)closeNoteTypePicker()">
+  <div class="note-type-picker">
+    <div class="ntp-title">選擇便條類型</div>
+    <div class="ntp-opts">
+      <button class="ntp-opt" onclick="startNewNote('text')">
+        <div class="ntp-icon">📝</div>
+        <div class="ntp-lbl">純文字</div>
+      </button>
+      <button class="ntp-opt" onclick="startNewNote('rich')">
+        <div class="ntp-icon">📄</div>
+        <div class="ntp-lbl">標題 + 內文</div>
+      </button>
+      <button class="ntp-opt" onclick="startNewNote('checklist')">
+        <div class="ntp-icon">☑️</div>
+        <div class="ntp-lbl">待辦清單</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Note Edit Modal -->
+<div class="note-edit-ov" id="note-edit-ov" onclick="if(event.target===this)closeNoteModal()">
+  <div class="note-edit-modal" id="note-edit-modal">
+    <div class="nem-head">
+      <div class="nem-title-wrap" id="nem-title-wrap">
+        <input type="text" id="nem-title" placeholder="標題（選填）" maxlength="100" autocomplete="off">
+      </div>
+      <button class="nem-close" onclick="closeNoteModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="nem-body-wrap" id="nem-body-wrap">
+      <textarea id="nem-body" placeholder="記點什麼…" rows="6"></textarea>
+    </div>
+    <div class="nem-cl-wrap" id="nem-cl-wrap" style="display:none">
+      <div class="nem-cl-list" id="nem-cl-list"></div>
+      <button class="nem-cl-add" onclick="addNoteCheckItem()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        新增項目
+      </button>
+    </div>
+    <div class="nem-foot">
+      <div class="nem-colors" id="nem-colors"></div>
+      <div class="nem-actions">
+        <button class="nem-del" id="nem-del-btn" onclick="deleteCurrentNote()">刪除</button>
+        <button class="nem-save" onclick="saveCurrentNote()">儲存</button>
+      </div>
+    </div>
+  </div>
+</div>

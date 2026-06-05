@@ -172,4 +172,19 @@ const API = {
   async clearWeeklyHistory() {
     return fetch('/api/clear-weekly-history', { method: 'POST' });
   },
+
+  /* ─── Notes ─── */
+  async fetchNotes(name) {
+    const res = await fetch(`/api/notes?name=${encodeURIComponent(name)}`);
+    if (!res.ok) throw new Error('fetchNotes failed: ' + res.status);
+    return res.json();
+  },
+
+  async saveNotes(name, notes) {
+    return fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, notes })
+    });
+  },
 };

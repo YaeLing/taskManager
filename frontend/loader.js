@@ -12,10 +12,11 @@ const PARTIALS = [
   'partials/weekly-confirm.html',
   'partials/weekly-record.html',
   'partials/ppt-modal.html',
+  'partials/note-modal.html',
 ];
 
 const SLOTS = {
-  'matrix-slot': 'partials/matrix.html',
+  'notes-slot': 'partials/notes-board.html',
 };
 
 Promise.all(PARTIALS.map(url => fetch(url).then(r => r.text())))

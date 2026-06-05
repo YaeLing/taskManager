@@ -85,7 +85,7 @@ async function initProfile(){
       }
     } catch(e){}
   }
-  await Promise.all([loadTasks(), loadChat(), loadPoints(), loadLeaves()]);
+  await Promise.all([loadTasks(), loadChat(), loadPoints(), loadLeaves(), loadNotes()]);
   if(!profile){
     showSetup(false);
   } else {
@@ -287,6 +287,7 @@ async function saveProfile(){
   document.getElementById('setup-screen').style.display = 'none';
   applyProfile();
   render();
+  loadNotes();
 }
 
 function applyProfile(){
@@ -847,11 +848,13 @@ function render(){
   document.getElementById('s-done').textContent=tasks.filter(t=>t.done).length;
   document.getElementById('s-left').textContent=allActive.length;
 
-  // Quadrants
+  // Quadrants (matrix may be absent if replaced by notes board)
   [1,2,3,4].forEach(q=>{
     const list=active.filter(t=>t.q===q);
-    document.getElementById('b'+q).textContent=list.length;
+    const badge=document.getElementById('b'+q);
+    if(badge) badge.textContent=list.length;
     const el=document.getElementById('t'+q);
+    if(!el) return;
     if(!list.length){
       el.innerHTML=searchQuery
         ? `<div class="search-no-result"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>無符合結果</div>`
@@ -908,9 +911,11 @@ function render(){
 
   renderSugPanel(active);
 
-  // Completed - 按時間分組
-  document.getElementById('done-badge').textContent=done.length;
+  // Completed - 按時間分組 (elements may not exist if matrix is removed)
+  const doneBadge=document.getElementById('done-badge');
+  if(doneBadge) doneBadge.textContent=done.length;
   const dl=document.getElementById('done-list');
+  if(!dl) return;
   if(!done.length){
     dl.innerHTML=searchQuery
       ? '<div style="display:flex;align-items:center;color:var(--dim);font-size:.72rem;opacity:.4;padding:0 4px">無符合結果</div>'
@@ -2311,4 +2316,202 @@ async function clearWeeklyHistory() {
   } catch(err) {
     alert('清除失敗：' + err.message);
   }
+}
+
+// ══════════════════════════════════════════════
+//  NOTES
+// ══════════════════════════════════════════════
+const NOTE_MAX = 30;
+const NOTE_COLORS = [
+  { key: 'default', hex: null,      label: '預設' },
+  { key: 'red',     hex: '#fce8e4', label: '紅' },
+  { key: 'orange',  hex: '#fde8d0', label: '橙' },
+  { key: 'yellow',  hex: '#fdf4c4', label: '黃' },
+  { key: 'green',   hex: '#d4f0dc', label: '綠' },
+  { key: 'teal',    hex: '#c8ece8', label: '青' },
+  { key: 'blue',    hex: '#d4e8f8', label: '藍' },
+  { key: 'purple',  hex: '#e8d8f8', label: '紫' },
+  { key: 'pink',    hex: '#f8d8ec', label: '粉' },
+];
+
+let _notes = [];
+let _editNote = null;
+let _noteClItems = [];
+
+async function loadNotes() {
+  if (!profile) return;
+  try {
+    _notes = await API.fetchNotes(profile.name);
+  } catch(e) {
+    _notes = [];
+  }
+  renderNotes();
+}
+
+function renderNotes() {
+  const grid = document.getElementById('notes-grid');
+  const countEl = document.getElementById('notes-count');
+  if (!grid) return;
+  if (countEl) countEl.textContent = `${_notes.length} / ${NOTE_MAX}`;
+  if (_notes.length === 0) {
+    grid.innerHTML = '<div class="notes-empty">點擊「＋ 新增」建立第一張便條紙</div>';
+    return;
+  }
+  grid.innerHTML = _notes.map(n => noteCardHTML(n)).join('');
+}
+
+function noteCardHTML(n) {
+  const colorKey = n.color || 'default';
+  let body = '';
+  if (n.type === 'text' || n.type === 'rich') {
+    body = `
+      ${n.title ? `<div class="note-card-title">${esc(n.title)}</div>` : ''}
+      ${n.body  ? `<div class="note-card-body">${esc(n.body)}</div>`   : ''}
+    `;
+  } else if (n.type === 'checklist') {
+    const items = (n.items || []).slice(0, 6);
+    const extra = (n.items || []).length - items.length;
+    body = `
+      ${n.title ? `<div class="note-card-title">${esc(n.title)}</div>` : ''}
+      <div>
+        ${items.map(it => `
+          <div class="note-cl-item ${it.done ? 'done' : ''}">
+            <span class="note-cl-icon">${it.done ? '☑' : '☐'}</span>
+            <span>${esc(it.text)}</span>
+          </div>`).join('')}
+        ${extra > 0 ? `<div class="note-cl-more">＋${extra} 項</div>` : ''}
+      </div>
+    `;
+  }
+  return `
+    <div class="note-card" data-id="${n.id}" data-color="${colorKey}"
+         onclick="openNoteEdit('${n.id}')">
+      ${body}
+      <button class="note-card-del" onclick="event.stopPropagation();deleteNote('${n.id}')" title="刪除">✕</button>
+    </div>`;
+}
+
+function openNoteTypePicker() {
+  if (_notes.length >= NOTE_MAX) { showNotif(`已達 ${NOTE_MAX} 張上限`); return; }
+  document.getElementById('note-type-ov').classList.add('active');
+}
+function closeNoteTypePicker() {
+  document.getElementById('note-type-ov').classList.remove('active');
+}
+
+function startNewNote(type) {
+  closeNoteTypePicker();
+  _editNote = { id: Date.now().toString(), type, color: 'default', title: '', body: '', items: [], createdAt: new Date().toISOString() };
+  _noteClItems = [];
+  _openNoteModal(false);
+}
+
+function openNoteEdit(id) {
+  const n = _notes.find(n => n.id === id);
+  if (!n) return;
+  _editNote = JSON.parse(JSON.stringify(n));
+  _noteClItems = JSON.parse(JSON.stringify(_editNote.items || []));
+  _openNoteModal(true);
+}
+
+function _openNoteModal(isEdit) {
+  const modal = document.getElementById('note-edit-modal');
+  const type = _editNote.type;
+
+  const titleWrap = document.getElementById('nem-title-wrap');
+  const titleInp  = document.getElementById('nem-title');
+  if (type === 'text') { titleWrap.style.display = 'none'; }
+  else { titleWrap.style.display = ''; titleInp.value = _editNote.title || ''; }
+
+  const bodyWrap = document.getElementById('nem-body-wrap');
+  const bodyTA   = document.getElementById('nem-body');
+  if (type === 'checklist') { bodyWrap.style.display = 'none'; }
+  else { bodyWrap.style.display = ''; bodyTA.value = _editNote.body || ''; }
+
+  const clWrap = document.getElementById('nem-cl-wrap');
+  if (type === 'checklist') { clWrap.style.display = ''; _renderClEditor(); }
+  else { clWrap.style.display = 'none'; }
+
+  _renderNoteColors();
+
+  const colorHex = NOTE_COLORS.find(c => c.key === (_editNote.color || 'default'))?.hex;
+  modal.style.background = colorHex || '';
+
+  document.getElementById('nem-del-btn').style.display = isEdit ? '' : 'none';
+  document.getElementById('note-edit-ov').classList.add('active');
+}
+
+function _renderClEditor() {
+  document.getElementById('nem-cl-list').innerHTML = _noteClItems.map((it, i) => `
+    <div class="nem-cl-item">
+      <input type="checkbox" ${it.done ? 'checked' : ''}
+             onchange="_noteClItems[${i}].done=this.checked;this.nextElementSibling.className='${it.done ? '' : 'done'}'">
+      <input type="text" value="${esc(it.text)}" class="${it.done ? 'done' : ''}"
+             placeholder="項目…" oninput="_noteClItems[${i}].text=this.value">
+      <button class="nem-cl-rm" onclick="removeNoteCheckItem(${i})">✕</button>
+    </div>`).join('');
+}
+
+function addNoteCheckItem() {
+  _noteClItems.push({ text: '', done: false });
+  _renderClEditor();
+  const inputs = document.querySelectorAll('.nem-cl-item input[type="text"]');
+  if (inputs.length) inputs[inputs.length - 1].focus();
+}
+function removeNoteCheckItem(i) {
+  _noteClItems.splice(i, 1);
+  _renderClEditor();
+}
+
+function _renderNoteColors() {
+  document.getElementById('nem-colors').innerHTML = NOTE_COLORS.map(c => `
+    <button class="nem-swatch ${(_editNote.color || 'default') === c.key ? 'selected' : ''}"
+            data-color="${c.key}" title="${c.label}"
+            style="${c.hex ? `background:${c.hex}` : ''}"
+            onclick="selectNoteColor('${c.key}')"></button>`).join('');
+}
+
+function selectNoteColor(key) {
+  _editNote.color = key;
+  const hex = NOTE_COLORS.find(c => c.key === key)?.hex;
+  document.getElementById('note-edit-modal').style.background = hex || '';
+  _renderNoteColors();
+}
+
+async function saveCurrentNote() {
+  if (!_editNote || !profile) return;
+  const type = _editNote.type;
+  if (type !== 'text') _editNote.title = (document.getElementById('nem-title')?.value || '').trim();
+  if (type !== 'checklist') _editNote.body = (document.getElementById('nem-body')?.value || '').trim();
+  if (type === 'checklist') _editNote.items = _noteClItems.filter(it => it.text.trim());
+  _editNote.updatedAt = new Date().toISOString();
+
+  const idx = _notes.findIndex(n => n.id === _editNote.id);
+  if (idx >= 0) _notes[idx] = _editNote;
+  else _notes.unshift(_editNote);
+
+  await API.saveNotes(profile.name, _notes);
+  closeNoteModal();
+  renderNotes();
+}
+
+async function deleteNote(id) {
+  if (!profile) return;
+  _notes = _notes.filter(n => n.id !== id);
+  await API.saveNotes(profile.name, _notes);
+  renderNotes();
+}
+
+async function deleteCurrentNote() {
+  if (!_editNote || !profile) return;
+  _notes = _notes.filter(n => n.id !== _editNote.id);
+  await API.saveNotes(profile.name, _notes);
+  closeNoteModal();
+  renderNotes();
+}
+
+function closeNoteModal() {
+  document.getElementById('note-edit-ov').classList.remove('active');
+  _editNote = null;
+  _noteClItems = [];
 }

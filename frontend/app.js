@@ -42,12 +42,11 @@ const AVATARS = [
 ];
 
 function avHTML(av, size=22, avType=null){
-  // Handle custom uploaded images
   if(avType === 'custom' || (av && av.startsWith('/avatars/'))){
-    return `<img src="${av}" style="width:${size}px;height:${size}px;border-radius:${Math.round(size/4)}px;object-fit:cover;">`;
+    return `<img src="${av}" style="width:${size}px;height:${size}px;object-fit:cover;display:block;">`;
   }
   if(av==='shoebill') return SHOEBILL_SVG;
-  return `<span style="font-size:${Math.round(size*.65)}px;line-height:1">${av}</span>`;
+  return `<span style="font-size:${Math.round(size*.65)}px;width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center;line-height:1;flex-shrink:0;">${av}</span>`;
 }
 
 /* ─── PROFILE ─── */

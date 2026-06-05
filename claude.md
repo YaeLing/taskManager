@@ -9,18 +9,26 @@
 
 多人協作任務管理系統，含個人便條紙看板與週報 PPT 自動生成。
 
-**技術棧：** Vanilla JS SPA + **FastAPI + uvicorn** 後端 + SSE 即時同步 + JSON 檔案儲存
+**技術棧：** Vue 3 + Vite + Pinia 前端 + FastAPI + uvicorn 後端 + SSE 即時同步 + JSON 檔案儲存
 
 **安裝：**
 ```bash
-pip install -r backend/requirements.txt
+pip install -r backend/requirements.txt   # Python 後端
+cd frontend && npm install                # 前端開發工具
 ```
 
-**啟動：**
+**啟動（生產）：**
 ```bash
-cd backend && python3 server.py
+cd frontend && npm run build   # 產出 dist/
+python3 backend/server.py      # FastAPI serve dist/ at :8080
 ```
-→ `http://localhost:8080`（預設 `0.0.0.0:8080`）
+
+**啟動（開發，HMR）：**
+```bash
+python3 backend/server.py      # port 8080（API）
+cd frontend && npm run dev     # port 5173（Vite HMR）
+```
+→ `http://localhost:8080`（生產） / `http://localhost:5173`（開發）
 → Swagger UI：`http://localhost:8080/docs`
 
 ---
@@ -29,18 +37,29 @@ cd backend && python3 server.py
 
 ```
 taskManager_git/
-├── frontend/
-│   ├── index.html          # HTML shell（只載入 api.js + loader.js）
-│   ├── style.css           # 所有 CSS
-│   ├── api.js              # fetch / HTTP 呼叫層（API 物件）
-│   ├── loader.js           # 並行 fetch partials → 注入 DOM → 載入 app.js
-│   ├── app.js              # 應用邏輯、render、事件處理
-│   └── partials/           # HTML 模組，各 UI 區塊獨立一檔
-│       ├── layout.html     # 主布局（三欄：建議面板｜notes-slot｜聊天室）
-│       ├── notes-board.html # 便條紙看板 + 已完成任務面板
-│       ├── note-modal.html  # 便條紙類型選擇 + 編輯 modal
-│       ├── drawer.html     # 任務詳情側欄
-│       └── ...（其他 partial）
+├── frontend/               ← Vue 3 + Vite 專案
+│   ├── index.html          # Vite entry（掛載 #app）
+│   ├── style.css           # 全域 CSS（import in main.js）
+│   ├── package.json / vite.config.js
+│   └── src/
+│       ├── main.js         # createApp + createPinia → mount('#app')
+│       ├── App.vue         # 根元件：layout + init all stores
+│       ├── api.js          # HTTP layer（所有 fetch 呼叫）
+│       ├── composables/useAvatar.js  # avHTML, esc, COLORS, isOverdue
+│       ├── stores/         # Pinia stores
+│       │   ├── user.js     # profile, myIP, teamName, setupVisible
+│       │   ├── tasks.js    # tasks[], computed sugTasks/doneTasks, CRUD
+│       │   ├── notes.js    # notes[], typePickerOpen, editModalOpen
+│       │   ├── chat.js     # messages[]
+│       │   ├── leaves.js   # leaves[]
+│       │   ├── points.js   # rockets, votes, leaderboard
+│       │   ├── sse.js      # EventSource → dispatch to stores
+│       │   └── weekly.js   # confirmOpen, recordOpen, pptOpen, wrImages
+│       └── components/     # Vue SFC
+│           ├── AppHeader.vue / SetupScreen.vue / HelpModal.vue / MobTabs.vue
+│           ├── SugPanel.vue / NotesBoard.vue / NoteModal.vue
+│           ├── ChatPanel.vue / TaskDrawer.vue / TaskModal.vue
+│           └── LeaveModal / VoteModal / WeeklyConfirm / WeeklyRecord / PPTModal / Notification
 ├── backend/
 │   ├── server.py           # FastAPI app、lifespan、所有 API 路由
 │   ├── ppt_generator.py    # 週報 PPT 生成邏輯（不動）
@@ -58,11 +77,12 @@ taskManager_git/
 
 ## 架構關鍵
 
-**Partial 載入流程（loader.js）：**
-1. 並行 fetch `PARTIALS`（body 層級的 HTML 片段）
-2. `insertAdjacentHTML('beforeend', ...)` 注入 body
-3. 串行處理 `SLOTS`（需插入特定 DOM 節點）：`notes-slot` → `notes-board.html`
-4. 動態建立 `<script src="app.js">` 載入應用邏輯
+**Vue 前端架構：**
+- `main.js` → `createApp(App).use(createPinia()).mount('#app')`
+- `App.vue` 的 `onMounted`：`userStore.init()` → 並行 load 所有資料 → `sseStore.connect()`
+- `sseStore`：`EventSource('/api/events')` 接收事件 → dispatch 給對應 store（tasks/chat/user/leaves/points）
+- 響應式：store 狀態變更 → Vue 自動重繪，不需手動呼叫 `render()`
+- `vite.config.js`：dev 模式 proxy `/api`、`/avatars`、`/weekly_data` → FastAPI port 8080
 
 **路徑常數（backend/server.py）：**
 - `PROJECT_ROOT` = taskManager_git/（backend/ 的上層）

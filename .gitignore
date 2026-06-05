@@ -4,11 +4,20 @@ history/
 avatars/
 weekly_data/
 server.log
+server.pid
 
 # Python
 __pycache__/
 *.pyc
 *.pyo
+*.pyd
+venv/
+.venv/
+*.egg-info/
+
+# Node / Vite
+node_modules/
+dist/
 
 # OS files
 .DS_Store

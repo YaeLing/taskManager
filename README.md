@@ -7,26 +7,26 @@
 ## 需求 Requirements
 
 - **Python 3.10+**
+- **Node.js 18+**（前端開發時需要；純執行只需 Python）
 - 現代瀏覽器（Chrome / Firefox / Edge / Safari）
 
 ---
 
 ## Before Start — 安裝套件
 
-首次使用請先執行安裝腳本，自動安裝 `fastapi`、`uvicorn`、`python-multipart`、`python-pptx`：
-
-| 系統 | 腳本路徑 |
-|------|---------|
-| Linux / macOS | `scripts/linux/setup.sh` |
-| Windows | `scripts\windows\setup.bat` |
-
+### 後端（Python）
 ```bash
-# Linux / macOS
-bash scripts/linux/setup.sh
-
-# 或直接安裝
 pip install -r backend/requirements.txt
+# 或執行安裝腳本
+bash scripts/linux/setup.sh
 ```
+
+### 前端（開發環境）
+```bash
+cd frontend && npm install
+```
+
+> **純執行用戶**：`dist/` 已包含建置好的前端，不需要 Node.js。
 
 ---
 
@@ -75,6 +75,25 @@ scripts\windows\start.bat status
 啟動後開啟瀏覽器訪問：`http://localhost:8080`
 
 > API 互動文件（Swagger UI）：`http://localhost:8080/docs`
+
+### 前端開發模式（HMR 熱更新）
+
+```bash
+# Terminal 1：FastAPI
+python3 backend/server.py
+
+# Terminal 2：Vite dev server（port 5173）
+cd frontend && npm run dev
+```
+
+訪問 `http://localhost:5173`，修改 Vue 元件即時更新，不需重整。
+
+### 前端 Build
+
+```bash
+cd frontend && npm run build
+# 產出至 dist/，FastAPI 會自動 serve
+```
 
 局域網內其他裝置：`http://<主機IP>:8080`
 
@@ -146,13 +165,18 @@ scripts\windows\start.bat status
 
 ```
 taskManager_git/
-├── frontend/
-│   ├── index.html          # HTML shell（載入 loader.js）
-│   ├── style.css           # 所有 CSS 樣式
-│   ├── api.js              # fetch / HTTP 呼叫層
-│   ├── loader.js           # 並行載入 partials，再載入 app.js
-│   ├── app.js              # 應用邏輯、render、事件處理
-│   └── partials/           # HTML 模組（每個 UI 區塊獨立一檔）
+├── frontend/               ← Vue 3 + Vite 專案
+│   ├── index.html          # Vite entry（掛載 #app）
+│   ├── style.css           # 全域 CSS
+│   ├── package.json
+│   ├── vite.config.js      # dev proxy + build 設定
+│   └── src/
+│       ├── main.js         # Vue app 入口
+│       ├── App.vue         # 根元件，載入所有 store + component
+│       ├── api.js          # HTTP 呼叫層
+│       ├── composables/    # 共用工具（avHTML、esc、COLORS…）
+│       ├── stores/         # Pinia stores（user / tasks / notes / chat / leaves / points / sse / weekly）
+│       └── components/     # Vue 元件（SetupScreen / AppHeader / SugPanel / NotesBoard…）
 │       ├── setup-screen.html
 │       ├── header.html
 │       ├── help-modal.html
@@ -165,9 +189,8 @@ taskManager_git/
 │       ├── leave-modal.html
 │       ├── vote-modal.html
 │       ├── note-modal.html # 便條紙類型選擇 + 編輯 modal
-│       ├── weekly-confirm.html
-│       ├── weekly-record.html
-│       └── ppt-modal.html
+│
+├── dist/                   ← vite build 產出（gitignored，FastAPI serve）
 │
 ├── backend/
 │   ├── server.py           # FastAPI 應用、SSE、所有 API 路由

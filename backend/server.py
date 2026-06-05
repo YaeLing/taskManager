@@ -14,7 +14,8 @@ from ppt_generator import generate_weekly_ppt, extract_template_colors
 
 # ── Paths ──────────────────────────────────────────────────────
 PROJECT_ROOT    = Path(__file__).parent.parent
-SERVE_DIR       = PROJECT_ROOT / 'frontend'
+DIST_DIR        = PROJECT_ROOT / 'dist'
+SERVE_DIR       = DIST_DIR if DIST_DIR.exists() else PROJECT_ROOT / 'frontend'
 DATA_DIR        = PROJECT_ROOT / 'data'
 AVATARS_DIR     = PROJECT_ROOT / 'avatars'
 WEEKLY_DATA_DIR = PROJECT_ROOT / 'weekly_data'

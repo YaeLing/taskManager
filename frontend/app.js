@@ -2376,8 +2376,11 @@ function noteCardHTML(n) {
       <div>
         ${items.map(it => `
           <div class="note-cl-item ${it.done ? 'done' : ''}">
-            <span class="note-cl-icon">${it.done ? '☑' : '☐'}</span>
-            <span>${esc(it.text)}</span>
+            <span class="note-cl-icon">${it.done
+              ? `<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x=".5" y=".5" width="13" height="13" rx="3" fill="var(--acc)" stroke="var(--acc)"/><polyline points="3,7 6,10 11,4" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+              : `<svg width="13" height="13" viewBox="0 0 14 14" fill="none"><rect x=".5" y=".5" width="13" height="13" rx="3" stroke="var(--border2)" stroke-width="1.2"/></svg>`
+            }</span>
+            <span class="note-cl-text">${esc(it.text)}</span>
           </div>`).join('')}
         ${extra > 0 ? `<div class="note-cl-more">＋${extra} 項</div>` : ''}
       </div>

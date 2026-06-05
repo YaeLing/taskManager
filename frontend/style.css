@@ -1053,7 +1053,7 @@ mark { background: none; color: inherit; }
 .note-card[data-color="pink"]   { background: #f8d8ec; }
 
 .note-card-title { font-size: .84rem; font-weight: 700; color: var(--text); margin-bottom: 5px; }
-.note-card-body  { font-size: .76rem; color: var(--dim); line-height: 1.5; white-space: pre-wrap; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; }
+.note-card-body  { font-size: .82rem; color: var(--dim); line-height: 1.55; white-space: pre-wrap; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; }
 .note-card-del {
   position: absolute; top: 7px; right: 7px; opacity: 0;
   background: rgba(0,0,0,.08); border: none; border-radius: 50%;
@@ -1063,9 +1063,10 @@ mark { background: none; color: inherit; }
 .note-card-del:hover { background: var(--q1bg); color: var(--q1); }
 
 /* ── Note Checklist Card ── */
-.note-cl-item { display: flex; align-items: baseline; gap: 6px; font-size: .76rem; color: var(--dim); padding: 2px 0; line-height: 1.4; }
-.note-cl-item.done span:last-child { text-decoration: line-through; opacity: .5; }
-.note-cl-icon { flex-shrink: 0; font-size: .78rem; }
+.note-cl-item { display: flex; align-items: center; gap: 6px; font-size: .82rem; color: var(--dim); padding: 3px 0; line-height: 1.4; }
+.note-cl-item.done .note-cl-text { text-decoration: line-through; opacity: .45; }
+.note-cl-icon { flex-shrink: 0; display: flex; align-items: center; }
+.note-cl-icon svg { display: block; }
 .note-cl-more { font-size: .68rem; color: var(--dim); margin-top: 4px; opacity: .7; }
 
 /* ── Note Type Picker ── */

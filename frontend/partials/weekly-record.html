@@ -1,0 +1,43 @@
+<!-- Weekly Record Modal -->
+<div class="weekly-overlay" id="wr-overlay">
+  <div class="wr-modal">
+    <div class="wr-head">
+      <div class="wr-head-row">
+        <input class="wr-title-input" id="wr-task-label" type="text" placeholder="任務標題">
+        <button class="wr-img-del" onclick="closeWeeklyRecord()" title="關閉">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="wr-head-row">
+        <span class="wr-project-lbl">Project</span>
+        <input class="wr-project-input" id="wr-project" type="text" placeholder="所屬專案或類別...">
+      </div>
+    </div>
+    <div class="wr-content">
+      <div class="wr-form-col">
+        <div class="wr-body">
+          <div class="field">
+            <label>整體說明</label>
+            <textarea id="wr-notes" rows="4" placeholder="說明這個任務的完成情況..."></textarea>
+          </div>
+          <div class="field">
+            <label>圖片 <span>（拖曳、貼上或點選上傳，可多張）</span></label>
+            <div class="wr-drop-zone" id="wr-drop-zone" onclick="document.getElementById('wr-file-input').click()">
+              拖曳或 Ctrl+V 貼上圖片到這裡，或點選選擇檔案
+              <input type="file" id="wr-file-input" multiple accept="image/*" style="display:none" onchange="wrAddFiles(this.files);this.value=''">
+            </div>
+            <div class="wr-img-list" id="wr-img-list"></div>
+          </div>
+        </div>
+        <div class="wr-foot">
+          <button class="btn-c" style="min-width:80px" onclick="closeWeeklyRecord()">取消</button>
+          <button class="btn-s" style="min-width:100px" onclick="saveWeeklyRecord()">儲存</button>
+        </div>
+      </div>
+      <div class="wr-comments-col empty" id="wr-comments-col">
+        <div class="wr-comments-head">討論紀錄</div>
+        <div class="wr-ref-list" id="wr-ref-list"></div>
+      </div>
+    </div>
+  </div>
+</div>

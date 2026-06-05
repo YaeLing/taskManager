@@ -1,0 +1,104 @@
+<!-- HELP MODAL -->
+<div class="help-overlay" id="help-overlay" onclick="closeHelp(event)">
+  <div class="help-modal">
+    <div class="help-head">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <h2>使用手冊</h2>
+      <button class="help-close" onclick="toggleHelp()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="help-body">
+      <div class="help-section">
+        <h3>四象限矩陣</h3>
+        <div class="help-qrow">
+          <div class="help-q" style="background:rgba(184,114,106,.06);border-color:rgba(184,114,106,.3)"><strong style="color:#b8726a">Q1 — 緊急且重要</strong>立即處理，優先度最高</div>
+          <div class="help-q" style="background:rgba(180,148,90,.06);border-color:rgba(180,148,90,.3)"><strong style="color:#b4945a">Q2 — 重要不緊急</strong>規劃時間處理，長期投資</div>
+          <div class="help-q" style="background:rgba(106,154,120,.06);border-color:rgba(106,154,120,.3)"><strong style="color:#6a9a78">Q3 — 緊急不重要</strong>可委派他人處理</div>
+          <div class="help-q" style="background:rgba(100,130,180,.06);border-color:rgba(100,130,180,.3)"><strong style="color:#6482b4">Q4 — 不緊急不重要</strong>低優先，考慮刪除</div>
+        </div>
+      </div>
+      <div class="help-section">
+        <h3>任務操作</h3>
+        <ul>
+          <li><strong>新增任務</strong>：點右上角「＋ 新增任務」或直接點擊象限空白區域</li>
+          <li><strong>編輯任務</strong>：hover 任務卡片 → 點✏ 編輯，或開啟詳情後點「編輯」</li>
+          <li><strong>移動象限</strong>：拖拉任務卡片到目標象限</li>
+          <li><strong>標記完成</strong>：點任務左側圓形勾選框，或在建議面板點「✓」</li>
+          <li><strong>恢復任務</strong>：在已完成區塊拖拉卡片到象限，或點「↩ 恢復」</li>
+          <li><strong>刪除任務</strong>：hover 卡片 → 點 ✕</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>標籤（Tags）</h3>
+        <ul>
+          <li>編輯任務時可新增多個 Tag，點輸入框選現有 tag 或輸入新名稱</li>
+          <li>建議執行面板上方會出現 tag filter 按鈕，可多選篩選</li>
+          <li>當所有任務都不含某個 tag 時，該 filter 按鈕會自動消失</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>認領與協作</h3>
+        <ul>
+          <li><strong>認領任務</strong>：hover 卡片 → 點👤，或在建議面板點「接手」</li>
+          <li><strong>留言</strong>：點任務名稱開啟詳情側欄，在底部輸入留言</li>
+          <li><strong>愛心</strong>：點留言下方的 ♡ 對留言按讚，即時同步給所有人</li>
+          <li><strong>即時同步</strong>：所有操作透過 SSE 即時廣播，多人同時使用不衝突</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>建議執行順序</h3>
+        <p>左側面板依「逾期 → 象限優先級（Q1→Q4）→ 截止日期」自動排序，幫助決定當前最應處理的任務。</p>
+      </div>
+      <div class="help-section">
+        <h3>已完成</h3>
+        <ul>
+          <li>點 header「已完成」按鈕顯示 / 隱藏完成區塊</li>
+          <li>依本週 / 上週 / 更早分組，點卡片可開啟詳情</li>
+          <li>可拖拉已完成任務回象限恢復</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>關鍵字搜尋</h3>
+        <ul>
+          <li>Header 搜尋列即時搜尋任務標題、說明與留言內容</li>
+          <li>符合的文字在卡片上以高亮色顯示</li>
+          <li>點 ✕ 或清空輸入框可取消搜尋</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>分享連結</h3>
+        <ul>
+          <li>每個任務都有獨立 URL（<code>/:taskId</code>），可直接連結到特定任務</li>
+          <li>開啟詳情側欄後點「🔗」按鈕一鍵複製連結</li>
+          <li>貼給隊友後對方開啟頁面會自動跳至該任務</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>請假公告</h3>
+        <ul>
+          <li>右側面板「📅 請假公告」區點「＋ 請假」登記請假日期</li>
+          <li>支援單日或起迄區間，可附備註說明</li>
+          <li>過去的假期自動從清單中隱藏</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>火箭積分投票 🚀</h3>
+        <ul>
+          <li>每週每人可投一票給表現最佳的隊友</li>
+          <li>投票後觸發全屏慶祝動畫；火箭數累計顯示於右側排行榜</li>
+          <li>每週一自動重置本週票數，歷史累計保留</li>
+        </ul>
+      </div>
+      <div class="help-section">
+        <h3>週報 PPT 生成</h3>
+        <ul>
+          <li>任務標記完成時可填寫說明並上傳截圖，作為週報素材</li>
+          <li>點 header「週報」按鈕開啟設定 modal，可上傳 <code>.pptx</code> 版型模板</li>
+          <li>點「生成 PPT」自動套用模板樣式，依人員與 Project 分組下載</li>
+          <li>「清除歷史紀錄」可移除非本週的舊週報資料</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>

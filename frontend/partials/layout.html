@@ -1,0 +1,74 @@
+<!-- MAIN LAYOUT -->
+<div class="layout">
+
+  <!-- LEFT: Suggested Order -->
+  <aside class="sug-panel">
+    <div class="sug-head">
+      <div class="sug-head-title">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round">
+          <path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>
+        </svg>
+        <h2>建議執行順序</h2>
+        <span class="sug-badge" id="sug-count">0</span>
+      </div>
+      <div class="sug-sub">依象限優先級 ＋ 截止日期排序</div>
+    </div>
+    <div class="sug-tag-filters" id="sug-tag-filters"></div>
+    <div class="sug-list" id="sug-list"></div>
+  </aside>
+
+  <div class="col-resizer" id="resizer-left"></div>
+
+  <div id="matrix-slot"></div>
+
+  <div class="col-resizer" id="resizer-right"></div>
+
+  <!-- RIGHT: Chat Panel -->
+  <aside class="chat-panel" id="chat-panel">
+    <!-- 🚀 積分排行榜 -->
+    <div class="rockets-area" id="rockets-area">
+      <div class="rockets-head">
+        <span class="rockets-title">🚀 本週貢獻排行</span>
+        <button class="vote-btn" id="vote-btn" onclick="openVoteModal()">投票</button>
+      </div>
+      <div class="rockets-list" id="rockets-list">
+        <div class="rockets-empty">尚無紀錄</div>
+      </div>
+    </div>
+
+    <!-- 📅 請假公告 -->
+    <div class="leave-area" id="leave-area">
+      <div class="leave-head">
+        <span class="leave-title">📅 請假公告</span>
+        <button class="leave-add-btn" onclick="openLeaveModal()">+ 請假</button>
+      </div>
+      <div class="leave-list" id="leave-list">
+        <div class="leave-empty">目前無人請假</div>
+      </div>
+    </div>
+
+    <!-- 💬 留言板 -->
+    <div class="chat-head">
+      <div class="chat-head-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+        <h2>團隊留言板</h2>
+        <span class="chat-badge" id="chat-count">0</span>
+      </div>
+      <div class="chat-sub">即時討論與公告</div>
+    </div>
+    <div class="chat-list" id="chat-list">
+      <div class="chat-empty">還沒有留言<br><span style="font-size:.65rem;opacity:.7">發送第一則訊息開始討論</span></div>
+    </div>
+    <div class="chat-input-wrap">
+      <textarea id="chat-input" placeholder="輸入訊息… (Enter 送出)" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}"></textarea>
+      <button class="chat-send-btn" onclick="sendChatMsg()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </aside>
+
+</div><!-- /layout -->

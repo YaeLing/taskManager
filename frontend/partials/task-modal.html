@@ -1,0 +1,46 @@
+<!-- Add/Edit Task Modal -->
+<div class="overlay" id="ov" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round">
+        <rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/>
+      </svg>
+      <h2 id="mtitle">新增任務</h2>
+    </div>
+    <div class="field">
+      <label>任務名稱</label>
+      <input type="text" id="itext" placeholder="輸入任務名稱…" maxlength="200" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>說明 <span>（選填）</span></label>
+      <textarea id="idesc" placeholder="詳細說明、注意事項…" maxlength="500"></textarea>
+    </div>
+    <div class="field" id="tag-field">
+      <label>標籤 <span>（選填）</span></label>
+      <div class="tag-chips" id="itag-chips"></div>
+      <div class="tag-input-wrap">
+        <input type="text" id="itag-input" placeholder="輸入或選擇標籤…" autocomplete="off" oninput="renderTagSuggestions()" onkeydown="handleTagKey(event)" onfocus="renderTagSuggestions()">
+        <div class="tag-suggestions" id="itag-suggestions" style="display:none"></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>
+        截止日期 <span>（選填）<span class="due-clear" onclick="document.getElementById('idue').value=''">清除</span></span>
+      </label>
+      <input type="date" id="idue">
+    </div>
+    <div class="field field-quadrant">
+      <label>選擇象限</label>
+      <div class="qpicker">
+        <div class="q-pick selected" data-q="1" onclick="pickQ(1)" style="--pc:var(--q1);--pbg:var(--q1bg)"><div class="dot"></div>緊急 ＆ 重要</div>
+        <div class="q-pick" data-q="2" onclick="pickQ(2)" style="--pc:var(--q2);--pbg:var(--q2bg)"><div class="dot"></div>緊急 ＆ 不重要</div>
+        <div class="q-pick" data-q="3" onclick="pickQ(3)" style="--pc:var(--q3);--pbg:var(--q3bg)"><div class="dot"></div>不緊急 ＆ 重要</div>
+        <div class="q-pick" data-q="4" onclick="pickQ(4)" style="--pc:var(--q4);--pbg:var(--q4bg)"><div class="dot"></div>不緊急 ＆ 不重要</div>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-c" onclick="closeModal()">取消</button>
+      <button class="btn-s" onclick="saveTask()">儲存任務</button>
+    </div>
+  </div>
+</div>

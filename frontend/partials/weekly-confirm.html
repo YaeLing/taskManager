@@ -1,0 +1,12 @@
+<!-- Weekly Confirm Modal -->
+<div class="weekly-overlay" id="wc-overlay" onclick="if(event.target===this)skipWeeklyRecord()">
+  <div class="wc-modal">
+    <div class="wc-icon">✅</div>
+    <h3>要記錄到本週簡報嗎？</h3>
+    <p class="wc-task" id="wc-task-name"></p>
+    <div class="wc-btns">
+      <button class="wc-skip" onclick="skipWeeklyRecord()">不用</button>
+      <button class="wc-fill" onclick="openWeeklyRecord()">要，填寫資料</button>
+    </div>
+  </div>
+</div>

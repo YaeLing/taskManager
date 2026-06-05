@@ -404,12 +404,12 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(data)
 
-        elif self.path.endswith('.css') or self.path.endswith('.js'):
+        elif self.path.endswith('.css') or self.path.endswith('.js') or self.path.endswith('.html'):
             filename = self.path.lstrip('/')
             filepath = SERVE_DIR / filename
             if filepath.exists() and filepath.is_file():
                 ext = filepath.suffix
-                ct = {'.css': 'text/css', '.js': 'application/javascript'}.get(ext, 'text/plain')
+                ct = {'.css': 'text/css', '.js': 'application/javascript', '.html': 'text/html; charset=utf-8'}.get(ext, 'text/plain')
                 data = filepath.read_bytes()
                 self.send_response(200)
                 self.send_header('Content-Type', ct)

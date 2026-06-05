@@ -1,24 +1,100 @@
 #!/usr/bin/env python3
-import http.server, json, threading, queue
+import http.server, json, threading, queue, io, base64, shutil
 from pathlib import Path
 from datetime import date, timedelta
+from ppt_generator import generate_weekly_ppt, extract_template_colors
 
 HOST = "0.0.0.0"
 PORT = 8080
-SERVE_DIR = Path(__file__).parent
-TASKS_FILE = SERVE_DIR / 'tasks.json'
-USERS_FILE = SERVE_DIR / 'users.json'
-CHAT_FILE = SERVE_DIR / 'chat.json'
-POINTS_FILE = SERVE_DIR / 'points.json'
-LEAVES_FILE = SERVE_DIR / 'leaves.json'
-PERSONAL_TASKS_FILE = SERVE_DIR / 'personal_tasks.json'
-AVATARS_DIR = SERVE_DIR / 'avatars'
+PROJECT_ROOT = Path(__file__).parent.parent   # taskManager_git/
+SERVE_DIR = PROJECT_ROOT / 'frontend'          # serve HTML/CSS/JS from here
+DATA_DIR = PROJECT_ROOT / 'data'
+AVATARS_DIR = PROJECT_ROOT / 'avatars'
+WEEKLY_DATA_DIR = PROJECT_ROOT / 'weekly_data'
+PPT_TEMPLATE_FILE = DATA_DIR / 'ppt_template.pptx'
+DATA_DIR.mkdir(exist_ok=True)
+TASKS_FILE = DATA_DIR / 'tasks.json'
+USERS_FILE = DATA_DIR / 'users.json'
+CHAT_FILE = DATA_DIR / 'chat.json'
+POINTS_FILE = DATA_DIR / 'points.json'
+LEAVES_FILE = DATA_DIR / 'leaves.json'
+PERSONAL_TASKS_FILE = DATA_DIR / 'personal_tasks.json'
+WEEKLY_CONFIG_FILE = DATA_DIR / 'weekly_config.json'
 _tasks_lock = threading.Lock()
+_weekly_lock = threading.Lock()
 _users_lock = threading.Lock()
 _chat_lock = threading.Lock()
 _points_lock = threading.Lock()
 _leaves_lock = threading.Lock()
 _personal_tasks_lock = threading.Lock()
+
+def get_week_folder():
+    today = date.today()
+    iso = today.isocalendar()
+    return f"{iso[0]}-W{iso[1]:02d}"
+
+def load_weekly_config():
+    if WEEKLY_CONFIG_FILE.exists():
+        try:
+            return json.loads(WEEKLY_CONFIG_FILE.read_text(encoding='utf-8'))
+        except:
+            pass
+    return {"title": "", "presenters": ""}
+
+def save_weekly_config(data):
+    with _weekly_lock:
+        WEEKLY_CONFIG_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+def load_weekly_records(week=None):
+    if week is None:
+        week = get_week_folder()
+    week_dir = WEEKLY_DATA_DIR / week
+    if not week_dir.exists():
+        return []
+    records = []
+    for task_dir in sorted(week_dir.iterdir()):
+        if not task_dir.is_dir():
+            continue
+        record_file = task_dir / 'record.json'
+        if record_file.exists():
+            try:
+                rec = json.loads(record_file.read_text(encoding='utf-8'))
+                for img in rec.get('images', []):
+                    img['url'] = f'/weekly_data/{week}/{task_dir.name}/{img["filename"]}'
+                    img['path'] = str(task_dir / img['filename'])
+                records.append(rec)
+            except:
+                pass
+    return records
+
+def save_weekly_record(payload):
+    week = get_week_folder()
+    task_id = payload.get('taskId', 0)
+    task_dir = WEEKLY_DATA_DIR / week / f'task-{task_id}'
+    task_dir.mkdir(parents=True, exist_ok=True)
+
+    images_meta = []
+    for img in payload.get('images', []):
+        fname = img.get('filename', 'img.png')
+        data_b64 = img.get('data', '')
+        if data_b64:
+            (task_dir / fname).write_bytes(base64.b64decode(data_b64))
+        images_meta.append({'filename': fname, 'caption': img.get('caption', '')})
+
+    record = {
+        'taskId': task_id,
+        'taskText': payload.get('taskText', ''),
+        'project': payload.get('project', ''),
+        'notes': payload.get('notes', ''),
+        'images': images_meta,
+        'handlers': payload.get('handlers', []),
+        'week': week,
+        'savedAt': date.today().isoformat()
+    }
+    with _weekly_lock:
+        (task_dir / 'record.json').write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
+    return record
+
 
 def load_leaves():
     if LEAVES_FILE.exists():
@@ -224,6 +300,75 @@ class Handler(http.server.BaseHTTPRequestHandler):
             else:
                 self.send_error(404)
 
+        elif self.path == '/api/ppt-template-info':
+            info = {'exists': PPT_TEMPLATE_FILE.exists()}
+            body = json.dumps(info).encode()
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', len(body))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif self.path == '/api/weekly-config':
+            body = json.dumps(load_weekly_config(), ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', len(body))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif self.path == '/api/weekly-records':
+            week = get_week_folder()
+            records = load_weekly_records(week)
+            body = json.dumps({'week': week, 'records': records}, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', len(body))
+            self.end_headers()
+            self.wfile.write(body)
+
+        elif self.path.startswith('/api/weekly-record'):
+            from urllib.parse import urlparse, parse_qs
+            qs = parse_qs(urlparse(self.path).query)
+            task_id = qs.get('taskId', [''])[0]
+            if not task_id:
+                self.send_error(400, 'Missing taskId'); return
+            week = get_week_folder()
+            task_dir = WEEKLY_DATA_DIR / week / f'task-{task_id}'
+            record_file = task_dir / 'record.json'
+            if record_file.exists():
+                try:
+                    rec = json.loads(record_file.read_text(encoding='utf-8'))
+                    for img in rec.get('images', []):
+                        img['url'] = f'/weekly_data/{week}/task-{task_id}/{img["filename"]}'
+                    body = json.dumps(rec, ensure_ascii=False).encode('utf-8')
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json; charset=utf-8')
+                    self.send_header('Content-Length', len(body))
+                    self.end_headers()
+                    self.wfile.write(body)
+                except:
+                    self.send_error(500)
+            else:
+                self.send_error(404)
+
+        elif self.path.startswith('/weekly_data/'):
+            rel = self.path[len('/weekly_data/'):]
+            if '..' in rel:
+                self.send_error(403); return
+            filepath = WEEKLY_DATA_DIR / rel
+            if filepath.exists() and filepath.is_file():
+                data = filepath.read_bytes()
+                ext = filepath.suffix.lower()
+                ct = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp'}.get(ext, 'application/octet-stream')
+                self.send_response(200)
+                self.send_header('Content-Type', ct)
+                self.send_header('Content-Length', len(data))
+                self.end_headers()
+                self.wfile.write(data)
+            else:
+                self.send_error(404)
+
         elif self.path == '/api/events':
             self.send_response(200)
             self.send_header("Content-Type", "text/event-stream")
@@ -258,6 +403,21 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_header("Content-Length", len(data))
             self.end_headers()
             self.wfile.write(data)
+
+        elif self.path.endswith('.css') or self.path.endswith('.js'):
+            filename = self.path.lstrip('/')
+            filepath = SERVE_DIR / filename
+            if filepath.exists() and filepath.is_file():
+                ext = filepath.suffix
+                ct = {'.css': 'text/css', '.js': 'application/javascript'}.get(ext, 'text/plain')
+                data = filepath.read_bytes()
+                self.send_response(200)
+                self.send_header('Content-Type', ct)
+                self.send_header('Content-Length', len(data))
+                self.end_headers()
+                self.wfile.write(data)
+            else:
+                self.send_error(404)
 
         else:
             self.send_error(404)
@@ -531,7 +691,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             try:
                 entry = json.loads(body)
                 # Write to daily log
-                history_dir = SERVE_DIR / 'history'
+                history_dir = PROJECT_ROOT / 'history'
                 history_dir.mkdir(exist_ok=True)
                 log_file = history_dir / f'{date.today().isoformat()}.jsonl'
                 with open(log_file, 'a', encoding='utf-8') as f:
@@ -565,6 +725,102 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 self.wfile.write(resp)
             except Exception as e:
                 self.send_error(400, str(e))
+
+        elif self.path == '/api/upload-ppt-template':
+            try:
+                content_type = self.headers.get('Content-Type', '')
+                length = int(self.headers.get('Content-Length', 0))
+                body = self.rfile.read(length)
+                if 'multipart/form-data' not in content_type:
+                    self.send_error(400, 'Expected multipart/form-data'); return
+                boundary = content_type.split('boundary=')[1].encode()
+                for part in body.split(b'--' + boundary):
+                    if b'filename=' in part and (b'.pptx' in part.lower() or b'.ppt' in part.lower()):
+                        header_end = part.find(b'\r\n\r\n')
+                        if header_end != -1:
+                            file_data = part[header_end + 4:].rstrip(b'\r\n--')
+                            PPT_TEMPLATE_FILE.write_bytes(file_data)
+                            break
+                resp = json.dumps({'ok': True}).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(resp))
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_error(400, str(e))
+
+        elif self.path == '/api/weekly-config':
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                data = json.loads(body)
+                save_weekly_config({'title': data.get('title', ''), 'presenters': data.get('presenters', '')})
+                resp = b'{"ok":true}'
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(resp))
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_error(400, str(e))
+
+        elif self.path == '/api/weekly-record':
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                payload = json.loads(body)
+                record = save_weekly_record(payload)
+                resp = json.dumps({'ok': True, 'record': record}).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(resp))
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_error(400, str(e))
+
+        elif self.path == '/api/generate-ppt':
+            length = int(self.headers.get('Content-Length', 0))
+            body = self.rfile.read(length)
+            try:
+                config = json.loads(body)
+                records = load_weekly_records()
+                pptx_bytes = generate_weekly_ppt(config, records, PPT_TEMPLATE_FILE)
+                week_num = get_week_folder().split('W')[1]
+                month_day = date.today().strftime('%m%d')
+                filename = f'sync week{week_num}_{month_day}.pptx'
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+                self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+                self.send_header('Content-Length', len(pptx_bytes))
+                self.end_headers()
+                self.wfile.write(pptx_bytes)
+            except Exception as e:
+                err = str(e).encode()
+                self.send_response(500)
+                self.send_header('Content-Type', 'text/plain')
+                self.send_header('Content-Length', len(err))
+                self.end_headers()
+                self.wfile.write(err)
+
+        elif self.path == '/api/clear-weekly-history':
+            try:
+                current_week = get_week_folder()
+                removed = 0
+                if WEEKLY_DATA_DIR.exists():
+                    for d in WEEKLY_DATA_DIR.iterdir():
+                        if d.is_dir() and d.name != current_week:
+                            shutil.rmtree(d)
+                            removed += 1
+                resp = json.dumps({'ok': True, 'removed': removed}).encode()
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.send_header('Content-Length', len(resp))
+                self.end_headers()
+                self.wfile.write(resp)
+            except Exception as e:
+                self.send_error(500, str(e))
 
         else:
             self.send_error(404)

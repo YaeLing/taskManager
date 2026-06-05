@@ -2395,7 +2395,9 @@ function noteCardHTML(n) {
 
 function openNoteTypePicker() {
   if (_notes.length >= NOTE_MAX) { showNotif(`已達 ${NOTE_MAX} 張上限`); return; }
-  document.getElementById('note-type-ov').classList.add('active');
+  const ov = document.getElementById('note-type-ov');
+  if (!ov) { console.error('[notes] #note-type-ov not found — partial may not have loaded'); return; }
+  ov.classList.add('active');
 }
 function closeNoteTypePicker() {
   document.getElementById('note-type-ov').classList.remove('active');

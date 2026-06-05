@@ -19,14 +19,20 @@ const SLOTS = {
   'notes-slot': 'partials/notes-board.html',
 };
 
-Promise.all(PARTIALS.map(url => fetch(url).then(r => r.text())))
+async function fetchPartial(url) {
+  const r = await fetch(url);
+  if (!r.ok) { console.error(`[loader] partial failed: ${url} (${r.status})`); return ''; }
+  return r.text();
+}
+
+Promise.all(PARTIALS.map(fetchPartial))
   .then(htmls => {
     document.body.insertAdjacentHTML('beforeend', htmls.join('\n'));
     return Promise.all(
       Object.entries(SLOTS).map(([id, url]) =>
-        fetch(url).then(r => r.text()).then(html => {
+        fetchPartial(url).then(html => {
           const slot = document.getElementById(id);
-          if (slot) slot.outerHTML = html;
+          if (slot && html) slot.outerHTML = html;
         })
       )
     );

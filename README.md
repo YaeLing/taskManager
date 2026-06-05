@@ -6,14 +6,14 @@
 
 ## 需求 Requirements
 
-- **Python 3.8+**
+- **Python 3.10+**
 - 現代瀏覽器（Chrome / Firefox / Edge / Safari）
 
 ---
 
 ## Before Start — 安裝套件
 
-首次使用請先執行安裝腳本，自動確認 Python 版本（需 3.8+）並安裝 `python-pptx`：
+首次使用請先執行安裝腳本，自動安裝 `fastapi`、`uvicorn`、`python-multipart`、`python-pptx`：
 
 | 系統 | 腳本路徑 |
 |------|---------|
@@ -23,6 +23,9 @@
 ```bash
 # Linux / macOS
 bash scripts/linux/setup.sh
+
+# 或直接安裝
+pip install -r backend/requirements.txt
 ```
 
 ---
@@ -70,6 +73,8 @@ scripts\windows\start.bat status
 ```
 
 啟動後開啟瀏覽器訪問：`http://localhost:8080`
+
+> API 互動文件（Swagger UI）：`http://localhost:8080/docs`
 
 局域網內其他裝置：`http://<主機IP>:8080`
 
@@ -165,8 +170,9 @@ taskManager_git/
 │       └── ppt-modal.html
 │
 ├── backend/
-│   ├── server.py           # HTTP 伺服器、SSE broadcast、所有 API 路由
-│   └── ppt_generator.py    # 週報 PPT 生成邏輯（python-pptx）
+│   ├── server.py           # FastAPI 應用、SSE、所有 API 路由
+│   ├── ppt_generator.py    # 週報 PPT 生成邏輯（python-pptx）
+│   └── requirements.txt    # fastapi, uvicorn, python-multipart, python-pptx
 │
 └── data/                   # runtime 資料（gitignored，server 自動建立）
     ├── tasks.json

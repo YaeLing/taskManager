@@ -9,13 +9,19 @@
 
 多人協作任務管理系統，含個人便條紙看板與週報 PPT 自動生成。
 
-**技術棧：** Vanilla JS SPA + Python `http.server` 後端 + SSE 即時同步 + JSON 檔案儲存
+**技術棧：** Vanilla JS SPA + **FastAPI + uvicorn** 後端 + SSE 即時同步 + JSON 檔案儲存
+
+**安裝：**
+```bash
+pip install -r backend/requirements.txt
+```
 
 **啟動：**
 ```bash
 cd backend && python3 server.py
 ```
 → `http://localhost:8080`（預設 `0.0.0.0:8080`）
+→ Swagger UI：`http://localhost:8080/docs`
 
 ---
 
@@ -36,8 +42,9 @@ taskManager_git/
 │       ├── drawer.html     # 任務詳情側欄
 │       └── ...（其他 partial）
 ├── backend/
-│   ├── server.py           # HTTP 伺服器、SSE、所有 API 路由
-│   └── ppt_generator.py    # 週報 PPT 生成邏輯
+│   ├── server.py           # FastAPI app、lifespan、所有 API 路由
+│   ├── ppt_generator.py    # 週報 PPT 生成邏輯（不動）
+│   └── requirements.txt    # fastapi, uvicorn[standard], python-multipart, python-pptx
 └── data/                   # runtime 資料（gitignored，自動建立）
     ├── tasks.json / users.json / chat.json
     ├── leaves.json / points.json / notes.json
@@ -59,8 +66,16 @@ taskManager_git/
 
 **路徑常數（backend/server.py）：**
 - `PROJECT_ROOT` = taskManager_git/（backend/ 的上層）
-- `SERVE_DIR` = `PROJECT_ROOT / 'frontend'`（serve 所有 .html / .css / .js）
+- `SERVE_DIR` = `PROJECT_ROOT / 'frontend'`（SPA fallback catch-all route）
 - `DATA_DIR` = `PROJECT_ROOT / 'data'`
+- 靜態資源：`/avatars` / `/weekly_data` 由 `StaticFiles` mount 服務
+
+**FastAPI 架構重點：**
+- `lifespan` context manager 取代棄用的 `on_event`
+- SSE 用 `asyncio.Queue` + `StreamingResponse`，`_broadcast()` 為 async
+- 檔案 I/O 仍用 `threading.Lock`（JSON 讀寫為同步操作）
+- 檔案上傳用 `UploadFile`（需 `python-multipart`）
+- SPA deep-link：catch-all `GET /{full_path:path}` 回傳 `index.html`
 
 **儲存：** `save()` 防抖 100ms → POST `/api/tasks` → SSE 廣播 → 所有人同步
 

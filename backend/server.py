@@ -1,55 +1,89 @@
 #!/usr/bin/env python3
-import http.server, json, threading, queue, io, base64, shutil, urllib.parse
-from pathlib import Path
+import asyncio, base64, hashlib, json, shutil, threading
 from datetime import date, timedelta
+from pathlib import Path
+from typing import Any
+
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, Request, UploadFile, File, HTTPException
+from fastapi.responses import FileResponse, Response, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+import uvicorn
+
 from ppt_generator import generate_weekly_ppt, extract_template_colors
 
-HOST = "0.0.0.0"
-PORT = 8080
-PROJECT_ROOT = Path(__file__).parent.parent   # taskManager_git/
-SERVE_DIR = PROJECT_ROOT / 'frontend'          # serve HTML/CSS/JS from here
-DATA_DIR = PROJECT_ROOT / 'data'
-AVATARS_DIR = PROJECT_ROOT / 'avatars'
+# ── Paths ──────────────────────────────────────────────────────
+PROJECT_ROOT    = Path(__file__).parent.parent
+SERVE_DIR       = PROJECT_ROOT / 'frontend'
+DATA_DIR        = PROJECT_ROOT / 'data'
+AVATARS_DIR     = PROJECT_ROOT / 'avatars'
 WEEKLY_DATA_DIR = PROJECT_ROOT / 'weekly_data'
 PPT_TEMPLATE_FILE = DATA_DIR / 'ppt_template.pptx'
-DATA_DIR.mkdir(exist_ok=True)
-TASKS_FILE = DATA_DIR / 'tasks.json'
-USERS_FILE = DATA_DIR / 'users.json'
-CHAT_FILE = DATA_DIR / 'chat.json'
-POINTS_FILE = DATA_DIR / 'points.json'
-LEAVES_FILE = DATA_DIR / 'leaves.json'
-PERSONAL_TASKS_FILE = DATA_DIR / 'personal_tasks.json'
-WEEKLY_CONFIG_FILE = DATA_DIR / 'weekly_config.json'
-NOTES_FILE = DATA_DIR / 'notes.json'
-_tasks_lock = threading.Lock()
-_weekly_lock = threading.Lock()
-_users_lock = threading.Lock()
-_chat_lock = threading.Lock()
-_points_lock = threading.Lock()
-_leaves_lock = threading.Lock()
-_personal_tasks_lock = threading.Lock()
-_notes_lock = threading.Lock()
 
-def get_week_folder():
-    today = date.today()
-    iso = today.isocalendar()
+DATA_DIR.mkdir(exist_ok=True)
+AVATARS_DIR.mkdir(exist_ok=True)
+
+TASKS_FILE         = DATA_DIR / 'tasks.json'
+USERS_FILE         = DATA_DIR / 'users.json'
+CHAT_FILE          = DATA_DIR / 'chat.json'
+POINTS_FILE        = DATA_DIR / 'points.json'
+LEAVES_FILE        = DATA_DIR / 'leaves.json'
+PERSONAL_TASKS_FILE= DATA_DIR / 'personal_tasks.json'
+WEEKLY_CONFIG_FILE = DATA_DIR / 'weekly_config.json'
+NOTES_FILE         = DATA_DIR / 'notes.json'
+
+# ── File locks ─────────────────────────────────────────────────
+_locks: dict[str, threading.Lock] = {k: threading.Lock() for k in
+    ['tasks','users','chat','points','leaves','personal_tasks','weekly','notes']}
+
+# ── Generic JSON helpers ────────────────────────────────────────
+def _read(path: Path, default):
+    if path.exists():
+        try:
+            return json.loads(path.read_text(encoding='utf-8'))
+        except Exception:
+            pass
+    return default
+
+def _write(lock_key: str, path: Path, data):
+    with _locks[lock_key]:
+        path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+
+# ── Domain helpers ──────────────────────────────────────────────
+def get_week_key() -> str:
+    iso = date.today().isocalendar()
     return f"{iso[0]}-W{iso[1]:02d}"
 
-def load_weekly_config():
-    if WEEKLY_CONFIG_FILE.exists():
+def load_tasks():       return _read(TASKS_FILE, [])
+def save_tasks(d):      _write('tasks', TASKS_FILE, d)
+def load_users():       return _read(USERS_FILE, {})
+def save_users(d):      _write('users', USERS_FILE, d)
+def load_chat():        return _read(CHAT_FILE, [])
+def save_chat(d):       _write('chat', CHAT_FILE, d)
+def load_points():      return _read(POINTS_FILE, {"rockets": {}, "votes": {}})
+def save_points(d):     _write('points', POINTS_FILE, d)
+def load_notes():       return _read(NOTES_FILE, {})
+def save_notes(d):      _write('notes', NOTES_FILE, d)
+def load_personal():    return _read(PERSONAL_TASKS_FILE, {})
+def save_personal(d):   _write('personal_tasks', PERSONAL_TASKS_FILE, d)
+def load_wconfig():     return _read(WEEKLY_CONFIG_FILE, {"title": "", "presenters": ""})
+def save_wconfig(d):    _write('weekly', WEEKLY_CONFIG_FILE, d)
+
+def load_leaves():
+    if LEAVES_FILE.exists():
         try:
-            return json.loads(WEEKLY_CONFIG_FILE.read_text(encoding='utf-8'))
-        except:
+            today = date.today().isoformat()
+            leaves = json.loads(LEAVES_FILE.read_text(encoding='utf-8'))
+            return [l for l in leaves if (l.get('endDate') or l.get('date', '')) >= today]
+        except Exception:
             pass
-    return {"title": "", "presenters": ""}
+    return []
 
-def save_weekly_config(data):
-    with _weekly_lock:
-        WEEKLY_CONFIG_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+def save_leaves(d): _write('leaves', LEAVES_FILE, d)
 
-def load_weekly_records(week=None):
+def load_weekly_records(week: str | None = None):
     if week is None:
-        week = get_week_folder()
+        week = get_week_key()
     week_dir = WEEKLY_DATA_DIR / week
     if not week_dir.exists():
         return []
@@ -57,24 +91,23 @@ def load_weekly_records(week=None):
     for task_dir in sorted(week_dir.iterdir()):
         if not task_dir.is_dir():
             continue
-        record_file = task_dir / 'record.json'
-        if record_file.exists():
+        rf = task_dir / 'record.json'
+        if rf.exists():
             try:
-                rec = json.loads(record_file.read_text(encoding='utf-8'))
+                rec = json.loads(rf.read_text(encoding='utf-8'))
                 for img in rec.get('images', []):
                     img['url'] = f'/weekly_data/{week}/{task_dir.name}/{img["filename"]}'
                     img['path'] = str(task_dir / img['filename'])
                 records.append(rec)
-            except:
+            except Exception:
                 pass
     return records
 
-def save_weekly_record(payload):
-    week = get_week_folder()
+def save_weekly_record(payload: dict):
+    week = get_week_key()
     task_id = payload.get('taskId', 0)
     task_dir = WEEKLY_DATA_DIR / week / f'task-{task_id}'
     task_dir.mkdir(parents=True, exist_ok=True)
-
     images_meta = []
     for img in payload.get('images', []):
         fname = img.get('filename', 'img.png')
@@ -82,7 +115,6 @@ def save_weekly_record(payload):
         if data_b64:
             (task_dir / fname).write_bytes(base64.b64decode(data_b64))
         images_meta.append({'filename': fname, 'caption': img.get('caption', '')})
-
     record = {
         'taskId': task_id,
         'taskText': payload.get('taskText', ''),
@@ -93,817 +125,351 @@ def save_weekly_record(payload):
         'week': week,
         'savedAt': date.today().isoformat()
     }
-    with _weekly_lock:
-        (task_dir / 'record.json').write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
+    with _locks['weekly']:
+        (task_dir / 'record.json').write_text(
+            json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
     return record
 
-
-def load_leaves():
-    if LEAVES_FILE.exists():
-        try:
-            leaves = json.loads(LEAVES_FILE.read_text(encoding='utf-8'))
-            today = date.today().isoformat()
-            # 保留今天及未來的假期
-            return [l for l in leaves if (l.get('endDate') or l.get('date', '')) >= today]
-        except:
-            pass
-    return []
-
-def save_leaves(leaves):
-    with _leaves_lock:
-        LEAVES_FILE.write_text(json.dumps(leaves, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def load_personal_tasks():
-    if PERSONAL_TASKS_FILE.exists():
-        try:
-            return json.loads(PERSONAL_TASKS_FILE.read_text(encoding='utf-8'))
-        except:
-            pass
-    return {}
-
-def save_personal_tasks(data):
-    with _personal_tasks_lock:
-        PERSONAL_TASKS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def load_notes():
-    if NOTES_FILE.exists():
-        try:
-            return json.loads(NOTES_FILE.read_text(encoding='utf-8'))
-        except:
-            pass
-    return {}
-
-def save_notes(data):
-    with _notes_lock:
-        NOTES_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def get_week_key():
-    """Return ISO week key, e.g. '2026-W16'"""
-    today = date.today()
-    iso = today.isocalendar()
-    return f"{iso[0]}-W{iso[1]:02d}"
-
-def load_points():
-    if POINTS_FILE.exists():
-        try:
-            return json.loads(POINTS_FILE.read_text(encoding='utf-8'))
-        except:
-            pass
-    return {"rockets": {}, "votes": {}}
-
-def save_points(data):
-    with _points_lock:
-        POINTS_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def load_tasks():
-    """Load tasks from JSON file"""
-    if TASKS_FILE.exists():
-        try:
-            return json.loads(TASKS_FILE.read_text(encoding='utf-8'))
-        except:
-            return []
-    return []
-
-def save_tasks(tasks):
-    """Save tasks to JSON file"""
-    with _tasks_lock:
-        TASKS_FILE.write_text(json.dumps(tasks, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def load_users():
-    """Load users from JSON file"""
-    if USERS_FILE.exists():
-        try:
-            return json.loads(USERS_FILE.read_text(encoding='utf-8'))
-        except:
-            return {}
-    return {}
-
-def save_users(users):
-    """Save users to JSON file"""
-    with _users_lock:
-        USERS_FILE.write_text(json.dumps(users, ensure_ascii=False, indent=2), encoding='utf-8')
-
-def load_chat():
-    """Load chat messages from JSON file"""
-    if CHAT_FILE.exists():
-        try:
-            return json.loads(CHAT_FILE.read_text(encoding='utf-8'))
-        except:
-            return []
-    return []
-
-def save_chat(messages):
-    """Save chat messages to JSON file"""
-    with _chat_lock:
-        CHAT_FILE.write_text(json.dumps(messages, ensure_ascii=False, indent=2), encoding='utf-8')
-
-# ── SSE broadcast ──────────────────────────────────────────────
-_sse_clients = []
+# ── SSE broadcast ───────────────────────────────────────────────
+_sse_queues: list[asyncio.Queue] = []
 _sse_lock = threading.Lock()
 
-def _broadcast(data: str):
-    msg = f"data: {data}\n\n".encode("utf-8")
+async def _broadcast(data: str):
+    msg = f"data: {data}\n\n"
     with _sse_lock:
         dead = []
-        for q in _sse_clients:
+        for q in _sse_queues:
             try:
                 q.put_nowait(msg)
-            except queue.Full:
+            except asyncio.QueueFull:
                 dead.append(q)
         for q in dead:
-            _sse_clients.remove(q)
+            _sse_queues.remove(q)
 
-# ── HTTP Handler ───────────────────────────────────────────────
-class Handler(http.server.BaseHTTPRequestHandler):
-
-    def do_GET(self):
-        if self.path == '/api/ip':
-            ip = self.client_address[0]
-            body = json.dumps({"ip": ip}).encode()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json")
-            self.send_header("Content-Length", len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path == '/api/tasks':
-            # Return all tasks
-            tasks = load_tasks()
-            body = json.dumps(tasks, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path == '/api/users':
-            # Return all users
-            users = load_users()
-            body = json.dumps(users, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path == '/api/leaves':
-            leaves = load_leaves()
-            body = json.dumps(leaves, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path.startswith('/api/notes'):
-            qs = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-            name = qs.get('name', [''])[0]
-            data = load_notes()
-            notes = data.get(name, [])
-            body = json.dumps(notes, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Content-Length', len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path.startswith('/api/personal-tasks'):
-            from urllib.parse import urlparse, parse_qs
-            qs = parse_qs(urlparse(self.path).query)
-            name = qs.get('name', [''])[0]
-            if not name:
-                self.send_error(400, 'Missing name'); return
-            data = load_personal_tasks()
-            tasks_for_user = data.get(name, [])
-            body = json.dumps({'tasks': tasks_for_user}, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path == '/api/points':
-            data = load_points()
-            # 附加本週 key 給前端判斷
-            data['week'] = get_week_key()
-            body = json.dumps(data, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path == '/api/chat':
-            # Return all chat messages
-            messages = load_chat()
-            body = json.dumps(messages, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Content-Length", len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path.startswith('/avatars/'):
-            # Serve avatar images
-            filename = self.path[9:]  # Remove '/avatars/'
-            # Prevent directory traversal
-            if '..' in filename or '/' in filename:
-                self.send_error(403)
-                return
-            filepath = AVATARS_DIR / filename
-            if filepath.exists() and filepath.is_file():
-                data = filepath.read_bytes()
-                # Determine content type
-                ext = filepath.suffix.lower()
-                content_types = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp'}
-                ct = content_types.get(ext, 'application/octet-stream')
-                self.send_response(200)
-                self.send_header("Content-Type", ct)
-                self.send_header("Content-Length", len(data))
-                self.send_header("Cache-Control", "public, max-age=86400")
-                self.end_headers()
-                self.wfile.write(data)
-            else:
-                self.send_error(404)
-
-        elif self.path == '/api/ppt-template-info':
-            info = {'exists': PPT_TEMPLATE_FILE.exists()}
-            body = json.dumps(info).encode()
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.send_header('Content-Length', len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path == '/api/weekly-config':
-            body = json.dumps(load_weekly_config(), ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Content-Length', len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path == '/api/weekly-records':
-            week = get_week_folder()
-            records = load_weekly_records(week)
-            body = json.dumps({'week': week, 'records': records}, ensure_ascii=False).encode('utf-8')
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json; charset=utf-8')
-            self.send_header('Content-Length', len(body))
-            self.end_headers()
-            self.wfile.write(body)
-
-        elif self.path.startswith('/api/weekly-record'):
-            from urllib.parse import urlparse, parse_qs
-            qs = parse_qs(urlparse(self.path).query)
-            task_id = qs.get('taskId', [''])[0]
-            if not task_id:
-                self.send_error(400, 'Missing taskId'); return
-            week = get_week_folder()
-            task_dir = WEEKLY_DATA_DIR / week / f'task-{task_id}'
-            record_file = task_dir / 'record.json'
-            if record_file.exists():
-                try:
-                    rec = json.loads(record_file.read_text(encoding='utf-8'))
-                    for img in rec.get('images', []):
-                        img['url'] = f'/weekly_data/{week}/task-{task_id}/{img["filename"]}'
-                    body = json.dumps(rec, ensure_ascii=False).encode('utf-8')
-                    self.send_response(200)
-                    self.send_header('Content-Type', 'application/json; charset=utf-8')
-                    self.send_header('Content-Length', len(body))
-                    self.end_headers()
-                    self.wfile.write(body)
-                except:
-                    self.send_error(500)
-            else:
-                self.send_error(404)
-
-        elif self.path.startswith('/weekly_data/'):
-            rel = self.path[len('/weekly_data/'):]
-            if '..' in rel:
-                self.send_error(403); return
-            filepath = WEEKLY_DATA_DIR / rel
-            if filepath.exists() and filepath.is_file():
-                data = filepath.read_bytes()
-                ext = filepath.suffix.lower()
-                ct = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp'}.get(ext, 'application/octet-stream')
-                self.send_response(200)
-                self.send_header('Content-Type', ct)
-                self.send_header('Content-Length', len(data))
-                self.end_headers()
-                self.wfile.write(data)
-            else:
-                self.send_error(404)
-
-        elif self.path == '/api/events':
-            self.send_response(200)
-            self.send_header("Content-Type", "text/event-stream")
-            self.send_header("Cache-Control", "no-cache")
-            self.send_header("Connection", "keep-alive")
-            self.end_headers()
-            q = queue.Queue(maxsize=32)
-            with _sse_lock:
-                _sse_clients.append(q)
-            try:
-                self.wfile.write(b": connected\n\n")
-                self.wfile.flush()
-                while True:
-                    try:
-                        msg = q.get(timeout=25)
-                        self.wfile.write(msg)
-                        self.wfile.flush()
-                    except queue.Empty:
-                        self.wfile.write(b": ping\n\n")
-                        self.wfile.flush()
-            except (BrokenPipeError, ConnectionResetError, OSError):
-                pass
-            finally:
-                with _sse_lock:
-                    if q in _sse_clients:
-                        _sse_clients.remove(q)
-
-        elif self.path in ('/', '/index.html') or self.path.lstrip('/').isdigit():
-            data = (SERVE_DIR / 'index.html').read_bytes()
-            self.send_response(200)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.send_header("Content-Length", len(data))
-            self.end_headers()
-            self.wfile.write(data)
-
-        elif self.path.endswith('.css') or self.path.endswith('.js') or self.path.endswith('.html'):
-            filename = self.path.lstrip('/')
-            filepath = SERVE_DIR / filename
-            if filepath.exists() and filepath.is_file():
-                ext = filepath.suffix
-                ct = {'.css': 'text/css', '.js': 'application/javascript', '.html': 'text/html; charset=utf-8'}.get(ext, 'text/plain')
-                data = filepath.read_bytes()
-                self.send_response(200)
-                self.send_header('Content-Type', ct)
-                self.send_header('Content-Length', len(data))
-                self.end_headers()
-                self.wfile.write(data)
-            else:
-                self.send_error(404)
-
-        else:
-            self.send_error(404)
-
-    def do_POST(self):
-        if self.path == '/api/users':
-            # Save/update user profile
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                data = json.loads(body)
-                user_id = data.get('id')  # Use IP or custom ID
-                if not user_id:
-                    user_id = self.client_address[0]
-                users = load_users()
-                users[user_id] = {
-                    'name': data.get('name', ''),
-                    'avatar': data.get('avatar', ''),
-                    'avatar_type': data.get('avatar_type', 'emoji'),  # 'emoji' or 'custom'
-                    'updated': date.today().isoformat()
-                }
-                save_users(users)
-                # Broadcast user update
-                _broadcast(json.dumps({
-                    "type": "user_update",
-                    "user_id": user_id,
-                    "user": users[user_id]
-                }, ensure_ascii=False))
-                resp = json.dumps({"ok": True, "user_id": user_id}).encode()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/upload-avatar':
-            # Handle avatar image upload
-            try:
-                content_type = self.headers.get('Content-Type', '')
-                if 'multipart/form-data' not in content_type:
-                    self.send_error(400, 'Expected multipart/form-data')
-                    return
-
-                # Parse boundary
-                boundary = content_type.split('boundary=')[1].encode()
-                length = int(self.headers.get('Content-Length', 0))
-                body = self.rfile.read(length)
-
-                # Simple multipart parser
-                parts = body.split(b'--' + boundary)
-                file_data = None
-                file_ext = 'png'
-
-                for part in parts:
-                    if b'filename=' in part:
-                        # Extract filename for extension
-                        header_end = part.find(b'\r\n\r\n')
-                        if header_end != -1:
-                            header = part[:header_end].decode('utf-8', errors='ignore')
-                            if 'filename="' in header:
-                                fn = header.split('filename="')[1].split('"')[0]
-                                if '.' in fn:
-                                    file_ext = fn.rsplit('.', 1)[1].lower()
-                                    if file_ext not in ['png', 'jpg', 'jpeg', 'gif', 'webp']:
-                                        file_ext = 'png'
-                            file_data = part[header_end + 4:]
-                            # Remove trailing boundary markers
-                            if file_data.endswith(b'\r\n'):
-                                file_data = file_data[:-2]
-                            if file_data.endswith(b'--'):
-                                file_data = file_data[:-2]
-                            if file_data.endswith(b'\r\n'):
-                                file_data = file_data[:-2]
-
-                if not file_data:
-                    self.send_error(400, 'No file uploaded')
-                    return
-
-                # Create avatars directory
-                AVATARS_DIR.mkdir(exist_ok=True)
-
-                # Generate unique filename using timestamp and IP
-                import hashlib
-                ip = self.client_address[0]
-                timestamp = str(date.today().isoformat()) + str(id(body))
-                filename = hashlib.md5((ip + timestamp).encode()).hexdigest()[:12] + '.' + file_ext
-
-                # Save file
-                filepath = AVATARS_DIR / filename
-                filepath.write_bytes(file_data)
-
-                avatar_url = f'/avatars/{filename}'
-                resp = json.dumps({"ok": True, "url": avatar_url}).encode()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/tasks':
-            # Save tasks and broadcast update
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                data = json.loads(body)
-                tasks = data.get('tasks', [])
-                save_tasks(tasks)
-                # Broadcast sync event to all clients
-                sync_msg = json.dumps({
-                    "type": "sync",
-                    "tasks": tasks,
-                    "from_ip": self.client_address[0]
-                }, ensure_ascii=False)
-                _broadcast(sync_msg)
-                resp = b'{"ok":true}'
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/chat':
-            # Save chat message and broadcast
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                data = json.loads(body)
-                message = data.get('message')
-                if message:
-                    messages = load_chat()
-                    messages.append(message)
-                    # Keep only last 200 messages
-                    if len(messages) > 200:
-                        messages = messages[-200:]
-                    save_chat(messages)
-                    # Broadcast chat message to all clients
-                    chat_msg = json.dumps({
-                        "type": "chat",
-                        "message": message,
-                        "from_ip": self.client_address[0]
-                    }, ensure_ascii=False)
-                    _broadcast(chat_msg)
-                resp = b'{"ok":true}'
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/leaves':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                req = json.loads(body)
-                action = req.get('action')  # 'add' or 'remove'
-                name   = req.get('name')
-                today  = date.today().isoformat()
-                leaves = load_leaves()
-
-                if action == 'add':
-                    leave_date = req.get('date', '')
-                    end_date   = req.get('endDate', '') or leave_date
-                    if not leave_date or leave_date < today:
-                        self.send_error(400, 'Invalid date')
-                        return
-                    if end_date < leave_date:
-                        end_date = leave_date
-                    # 同一人同一起始日只保留一筆
-                    leaves = [l for l in leaves if not (l['name'] == name and l['date'] == leave_date)]
-                    leaves.append({
-                        'name': name,
-                        'avatar': req.get('avatar', ''),
-                        'avatar_type': req.get('avatar_type', 'emoji'),
-                        'date': leave_date,
-                        'endDate': end_date,
-                        'note': req.get('note', '')
-                    })
-                    leaves.sort(key=lambda l: l['date'])
-                    save_leaves(leaves)
-                    _broadcast(json.dumps({
-                        'type': 'leave_update',
-                        'action': 'add',
-                        'leave': leaves[-1] if leaves else {},
-                        'leaves': leaves
-                    }, ensure_ascii=False))
-
-                elif action == 'remove':
-                    leave_date = req.get('date', '')
-                    leaves = [l for l in leaves if not (l['name'] == name and l['date'] == leave_date)]
-                    save_leaves(leaves)
-                    _broadcast(json.dumps({
-                        'type': 'leave_update',
-                        'action': 'remove',
-                        'leaves': leaves
-                    }, ensure_ascii=False))
-
-                resp = json.dumps({'ok': True, 'leaves': leaves}).encode()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/points/vote':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                req = json.loads(body)
-                voter = req.get('voter')       # 投票者名稱
-                voted_for = req.get('votedFor') # 被投票者名稱
-                task_id = req.get('taskId')
-                task_text = req.get('taskText', '')
-
-                if not voter or not voted_for:
-                    self.send_error(400, 'Missing voter or votedFor')
-                    return
-
-                week = get_week_key()
-                data = load_points()
-                if 'rockets' not in data: data['rockets'] = {}
-                if 'votes' not in data: data['votes'] = {}
-                if week not in data['votes']: data['votes'][week] = {}
-
-                # 檢查本週是否已投票
-                if voter in data['votes'][week]:
-                    resp = json.dumps({"ok": False, "error": "already_voted"}).encode()
-                    self.send_response(200)
-                    self.send_header('Content-Type', 'application/json')
-                    self.send_header('Content-Length', len(resp))
-                    self.end_headers()
-                    self.wfile.write(resp)
-                    return
-
-                # 記錄投票並增加火箭
-                data['votes'][week][voter] = {'votedFor': voted_for, 'taskId': task_id, 'taskText': task_text}
-                data['rockets'][voted_for] = data['rockets'].get(voted_for, 0) + 1
-                save_points(data)
-
-                # SSE 廣播積分更新
-                _broadcast(json.dumps({
-                    "type": "points_update",
-                    "rockets": data['rockets'],
-                    "voter": voter,
-                    "votedFor": voted_for,
-                    "taskText": task_text,
-                    "week": week
-                }, ensure_ascii=False))
-
-                resp = json.dumps({"ok": True, "rockets": data['rockets']}).encode()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/history':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                entry = json.loads(body)
-                # Write to daily log
-                history_dir = PROJECT_ROOT / 'history'
-                history_dir.mkdir(exist_ok=True)
-                log_file = history_dir / f'{date.today().isoformat()}.jsonl'
-                with open(log_file, 'a', encoding='utf-8') as f:
-                    f.write(json.dumps(entry, ensure_ascii=False) + '\n')
-                # Broadcast to all SSE clients
-                _broadcast(json.dumps(entry, ensure_ascii=False))
-                resp = b'{"ok":true}'
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-        elif self.path == '/api/notes':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                req = json.loads(body)
-                name = req.get('name', '')
-                if not name:
-                    self.send_error(400, 'Missing name'); return
-                data = load_notes()
-                data[name] = req.get('notes', [])[:30]
-                save_notes(data)
-                resp = b'{"ok":true}'
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/personal-tasks':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                req = json.loads(body)
-                name = req.get('name', '')
-                if not name:
-                    self.send_error(400, 'Missing name'); return
-                data = load_personal_tasks()
-                data[name] = req.get('tasks', [])
-                save_personal_tasks(data)
-                resp = b'{"ok":true}'
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/upload-ppt-template':
-            try:
-                content_type = self.headers.get('Content-Type', '')
-                length = int(self.headers.get('Content-Length', 0))
-                body = self.rfile.read(length)
-                if 'multipart/form-data' not in content_type:
-                    self.send_error(400, 'Expected multipart/form-data'); return
-                boundary = content_type.split('boundary=')[1].encode()
-                for part in body.split(b'--' + boundary):
-                    if b'filename=' in part and (b'.pptx' in part.lower() or b'.ppt' in part.lower()):
-                        header_end = part.find(b'\r\n\r\n')
-                        if header_end != -1:
-                            file_data = part[header_end + 4:].rstrip(b'\r\n--')
-                            PPT_TEMPLATE_FILE.write_bytes(file_data)
-                            break
-                resp = json.dumps({'ok': True}).encode()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/weekly-config':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                data = json.loads(body)
-                save_weekly_config({'title': data.get('title', ''), 'presenters': data.get('presenters', '')})
-                resp = b'{"ok":true}'
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/weekly-record':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                payload = json.loads(body)
-                record = save_weekly_record(payload)
-                resp = json.dumps({'ok': True, 'record': record}).encode()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(400, str(e))
-
-        elif self.path == '/api/generate-ppt':
-            length = int(self.headers.get('Content-Length', 0))
-            body = self.rfile.read(length)
-            try:
-                config = json.loads(body)
-                records = load_weekly_records()
-                pptx_bytes = generate_weekly_ppt(config, records, PPT_TEMPLATE_FILE)
-                week_num = get_week_folder().split('W')[1]
-                month_day = date.today().strftime('%m%d')
-                filename = f'sync week{week_num}_{month_day}.pptx'
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
-                self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
-                self.send_header('Content-Length', len(pptx_bytes))
-                self.end_headers()
-                self.wfile.write(pptx_bytes)
-            except Exception as e:
-                err = str(e).encode()
-                self.send_response(500)
-                self.send_header('Content-Type', 'text/plain')
-                self.send_header('Content-Length', len(err))
-                self.end_headers()
-                self.wfile.write(err)
-
-        elif self.path == '/api/clear-weekly-history':
-            try:
-                current_week = get_week_folder()
-                removed = 0
-                if WEEKLY_DATA_DIR.exists():
-                    for d in WEEKLY_DATA_DIR.iterdir():
-                        if d.is_dir() and d.name != current_week:
-                            shutil.rmtree(d)
-                            removed += 1
-                resp = json.dumps({'ok': True, 'removed': removed}).encode()
-                self.send_response(200)
-                self.send_header('Content-Type', 'application/json')
-                self.send_header('Content-Length', len(resp))
-                self.end_headers()
-                self.wfile.write(resp)
-            except Exception as e:
-                self.send_error(500, str(e))
-
-        else:
-            self.send_error(404)
-
-    def log_message(self, fmt, *args):
-        print(f"[{self.address_string()}] {fmt % args}")
-
-def purge_old_history(days=30):
+# ── History purge ───────────────────────────────────────────────
+def purge_old_history(days: int = 30):
     history_dir = PROJECT_ROOT / 'history'
     if not history_dir.exists():
         return
     cutoff = date.today() - timedelta(days=days)
-    removed = 0
-    for f in history_dir.glob('*.jsonl'):
-        try:
-            if date.fromisoformat(f.stem) < cutoff:
-                f.unlink()
-                removed += 1
-        except ValueError:
-            pass
+    removed = sum(
+        1 for f in history_dir.glob('*.jsonl')
+        if _try_delete_if_old(f, cutoff)
+    )
     if removed:
         print(f"🗑️  purged {removed} history file(s) older than {days} days")
 
-def _daily_purge_loop():
-    import time, datetime
+def _try_delete_if_old(f: Path, cutoff: date) -> bool:
+    try:
+        if date.fromisoformat(f.stem) < cutoff:
+            f.unlink()
+            return True
+    except ValueError:
+        pass
+    return False
+
+async def _daily_purge():
+    import datetime
     while True:
         now = datetime.datetime.now()
         next_run = now.replace(hour=12, minute=0, second=0, microsecond=0)
         if next_run <= now:
             next_run += datetime.timedelta(days=1)
-        time.sleep((next_run - now).total_seconds())
+        await asyncio.sleep((next_run - now).total_seconds())
         purge_old_history(30)
 
-if __name__ == '__main__':
+# ── App ─────────────────────────────────────────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     purge_old_history(30)
-    t = threading.Thread(target=_daily_purge_loop, daemon=True)
-    t.start()
-    server = http.server.ThreadingHTTPServer((HOST, PORT), Handler)
-    print(f"✅ http://{HOST}:{PORT}/")
-    server.serve_forever()
+    asyncio.create_task(_daily_purge())
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+# ── API routes ──────────────────────────────────────────────────
+
+@app.get("/api/ip")
+async def get_ip(request: Request):
+    return {"ip": request.client.host}
+
+@app.get("/api/tasks")
+async def get_tasks():
+    return load_tasks()
+
+@app.post("/api/tasks")
+async def post_tasks(request: Request, body: dict[str, Any]):
+    tasks = body.get('tasks', [])
+    save_tasks(tasks)
+    await _broadcast(json.dumps({
+        "type": "sync", "tasks": tasks, "from_ip": request.client.host
+    }, ensure_ascii=False))
+    return {"ok": True}
+
+@app.get("/api/users")
+async def get_users():
+    return load_users()
+
+@app.post("/api/users")
+async def post_users(request: Request, body: dict[str, Any]):
+    user_id = body.get('id') or request.client.host
+    users = load_users()
+    users[user_id] = {
+        'name': body.get('name', ''),
+        'avatar': body.get('avatar', ''),
+        'avatar_type': body.get('avatar_type', 'emoji'),
+        'updated': date.today().isoformat()
+    }
+    save_users(users)
+    await _broadcast(json.dumps({
+        "type": "user_update", "user_id": user_id, "user": users[user_id]
+    }, ensure_ascii=False))
+    return {"ok": True, "user_id": user_id}
+
+@app.get("/api/chat")
+async def get_chat():
+    return load_chat()
+
+@app.post("/api/chat")
+async def post_chat(request: Request, body: dict[str, Any]):
+    message = body.get('message')
+    if message:
+        messages = load_chat()
+        messages.append(message)
+        if len(messages) > 200:
+            messages = messages[-200:]
+        save_chat(messages)
+        await _broadcast(json.dumps({
+            "type": "chat", "message": message, "from_ip": request.client.host
+        }, ensure_ascii=False))
+    return {"ok": True}
+
+@app.get("/api/leaves")
+async def get_leaves():
+    return load_leaves()
+
+@app.post("/api/leaves")
+async def post_leaves(body: dict[str, Any]):
+    action = body.get('action')
+    name   = body.get('name')
+    today  = date.today().isoformat()
+    leaves = load_leaves()
+
+    if action == 'add':
+        leave_date = body.get('date', '')
+        end_date   = body.get('endDate', '') or leave_date
+        if not leave_date or leave_date < today:
+            raise HTTPException(400, 'Invalid date')
+        if end_date < leave_date:
+            end_date = leave_date
+        leaves = [l for l in leaves if not (l['name'] == name and l['date'] == leave_date)]
+        leaves.append({
+            'name': name, 'avatar': body.get('avatar', ''),
+            'avatar_type': body.get('avatar_type', 'emoji'),
+            'date': leave_date, 'endDate': end_date, 'note': body.get('note', '')
+        })
+        leaves.sort(key=lambda l: l['date'])
+
+    elif action == 'remove':
+        leave_date = body.get('date', '')
+        leaves = [l for l in leaves if not (l['name'] == name and l['date'] == leave_date)]
+
+    save_leaves(leaves)
+    await _broadcast(json.dumps({
+        'type': 'leave_update', 'action': action, 'leaves': leaves
+    }, ensure_ascii=False))
+    return {"ok": True, "leaves": leaves}
+
+@app.get("/api/points")
+async def get_points():
+    data = load_points()
+    data['week'] = get_week_key()
+    return data
+
+@app.post("/api/points/vote")
+async def post_vote(body: dict[str, Any]):
+    voter     = body.get('voter')
+    voted_for = body.get('votedFor')
+    if not voter or not voted_for:
+        raise HTTPException(400, 'Missing voter or votedFor')
+    week = get_week_key()
+    data = load_points()
+    data.setdefault('rockets', {})
+    data.setdefault('votes', {})
+    data['votes'].setdefault(week, {})
+    if voter in data['votes'][week]:
+        return {"ok": False, "error": "already_voted"}
+    data['votes'][week][voter] = {
+        'votedFor': voted_for,
+        'taskId': body.get('taskId'),
+        'taskText': body.get('taskText', '')
+    }
+    data['rockets'][voted_for] = data['rockets'].get(voted_for, 0) + 1
+    save_points(data)
+    await _broadcast(json.dumps({
+        "type": "points_update", "rockets": data['rockets'],
+        "voter": voter, "votedFor": voted_for,
+        "taskText": body.get('taskText', ''), "week": week
+    }, ensure_ascii=False))
+    return {"ok": True, "rockets": data['rockets']}
+
+@app.get("/api/notes")
+async def get_notes(name: str = ''):
+    return load_notes().get(name, [])
+
+@app.post("/api/notes")
+async def post_notes(body: dict[str, Any]):
+    name = body.get('name', '')
+    if not name:
+        raise HTTPException(400, 'Missing name')
+    data = load_notes()
+    data[name] = body.get('notes', [])[:30]
+    save_notes(data)
+    return {"ok": True}
+
+@app.get("/api/personal-tasks")
+async def get_personal(name: str = ''):
+    if not name:
+        raise HTTPException(400, 'Missing name')
+    return {"tasks": load_personal().get(name, [])}
+
+@app.post("/api/personal-tasks")
+async def post_personal(body: dict[str, Any]):
+    name = body.get('name', '')
+    if not name:
+        raise HTTPException(400, 'Missing name')
+    data = load_personal()
+    data[name] = body.get('tasks', [])
+    save_personal(data)
+    return {"ok": True}
+
+@app.post("/api/history")
+async def post_history(body: dict[str, Any]):
+    history_dir = PROJECT_ROOT / 'history'
+    history_dir.mkdir(exist_ok=True)
+    log_file = history_dir / f'{date.today().isoformat()}.jsonl'
+    with open(log_file, 'a', encoding='utf-8') as f:
+        f.write(json.dumps(body, ensure_ascii=False) + '\n')
+    await _broadcast(json.dumps(body, ensure_ascii=False))
+    return {"ok": True}
+
+@app.post("/api/upload-avatar")
+async def upload_avatar(request: Request, file: UploadFile = File(...)):
+    ext = (file.filename or 'img.png').rsplit('.', 1)[-1].lower()
+    if ext not in ('png', 'jpg', 'jpeg', 'gif', 'webp'):
+        ext = 'png'
+    data = await file.read()
+    token = request.client.host + str(len(data))
+    filename = hashlib.md5(token.encode()).hexdigest()[:12] + '.' + ext
+    (AVATARS_DIR / filename).write_bytes(data)
+    return {"ok": True, "url": f'/avatars/{filename}'}
+
+@app.get("/api/ppt-template-info")
+async def ppt_template_info():
+    return {"exists": PPT_TEMPLATE_FILE.exists()}
+
+@app.post("/api/upload-ppt-template")
+async def upload_ppt_template(file: UploadFile = File(...)):
+    data = await file.read()
+    PPT_TEMPLATE_FILE.write_bytes(data)
+    return {"ok": True}
+
+@app.get("/api/weekly-config")
+async def get_wconfig():
+    return load_wconfig()
+
+@app.post("/api/weekly-config")
+async def post_wconfig(body: dict[str, Any]):
+    save_wconfig({'title': body.get('title', ''), 'presenters': body.get('presenters', '')})
+    return {"ok": True}
+
+@app.get("/api/weekly-records")
+async def get_weekly_records():
+    week = get_week_key()
+    return {"week": week, "records": load_weekly_records(week)}
+
+@app.get("/api/weekly-record")
+async def get_weekly_record(taskId: str = ''):
+    if not taskId:
+        raise HTTPException(400, 'Missing taskId')
+    week = get_week_key()
+    rf = WEEKLY_DATA_DIR / week / f'task-{taskId}' / 'record.json'
+    if not rf.exists():
+        raise HTTPException(404)
+    rec = json.loads(rf.read_text(encoding='utf-8'))
+    for img in rec.get('images', []):
+        img['url'] = f'/weekly_data/{week}/task-{taskId}/{img["filename"]}'
+    return rec
+
+@app.post("/api/weekly-record")
+async def post_weekly_record(body: dict[str, Any]):
+    record = save_weekly_record(body)
+    return {"ok": True, "record": record}
+
+@app.post("/api/generate-ppt")
+async def generate_ppt(body: dict[str, Any]):
+    records = load_weekly_records()
+    pptx_bytes = generate_weekly_ppt(body, records, PPT_TEMPLATE_FILE)
+    week_num   = get_week_key().split('W')[1]
+    month_day  = date.today().strftime('%m%d')
+    filename   = f'sync week{week_num}_{month_day}.pptx'
+    return Response(
+        content=pptx_bytes,
+        media_type='application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+    )
+
+@app.post("/api/clear-weekly-history")
+async def clear_weekly_history():
+    current_week = get_week_key()
+    removed = 0
+    if WEEKLY_DATA_DIR.exists():
+        for d in WEEKLY_DATA_DIR.iterdir():
+            if d.is_dir() and d.name != current_week:
+                shutil.rmtree(d)
+                removed += 1
+    return {"ok": True, "removed": removed}
+
+# ── SSE ─────────────────────────────────────────────────────────
+@app.get("/api/events")
+async def sse_events():
+    q: asyncio.Queue = asyncio.Queue(maxsize=32)
+    with _sse_lock:
+        _sse_queues.append(q)
+
+    async def stream():
+        yield ": connected\n\n"
+        try:
+            while True:
+                try:
+                    msg = await asyncio.wait_for(q.get(), timeout=25)
+                    yield msg
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+        finally:
+            with _sse_lock:
+                if q in _sse_queues:
+                    _sse_queues.remove(q)
+
+    return StreamingResponse(stream(), media_type="text/event-stream",
+                             headers={"Cache-Control": "no-cache", "Connection": "keep-alive"})
+
+# ── Static files ─────────────────────────────────────────────────
+# Serve avatars and weekly_data
+app.mount("/avatars",     StaticFiles(directory=str(AVATARS_DIR)),     name="avatars")
+app.mount("/weekly_data", StaticFiles(directory=str(WEEKLY_DATA_DIR)), name="weekly_data")
+
+# Serve frontend (SPA fallback: all non-API paths → index.html)
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    # Task deep-link: numeric path → index.html
+    if full_path.isdigit() or full_path == '':
+        return FileResponse(SERVE_DIR / 'index.html')
+    target = SERVE_DIR / full_path
+    if target.exists() and target.is_file():
+        return FileResponse(target)
+    return FileResponse(SERVE_DIR / 'index.html')
+
+# ── Entry point ──────────────────────────────────────────────────
+if __name__ == '__main__':
+    uvicorn.run("server:app", host="0.0.0.0", port=8080, reload=False)

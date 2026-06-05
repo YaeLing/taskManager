@@ -13,23 +13,32 @@
 
 **安裝：**
 ```bash
-pip install -r backend/requirements.txt   # Python 後端
-cd frontend && npm install                # 前端開發工具
+# 一般使用者（只需 Python）
+bash scripts/linux/setup.sh
+
+# 開發者（Python + npm install）
+bash scripts/linux/setup.sh --dev
 ```
 
-**啟動（生產）：**
+**啟動：**
 ```bash
-cd frontend && npm run build   # 產出 dist/
-python3 backend/server.py      # FastAPI serve dist/ at :8080
-```
+# 一般使用者（dist/ 已預先 build 在 repo 內）
+python3 backend/server.py   # 或 bash scripts/linux/start.sh
 
-**啟動（開發，HMR）：**
-```bash
-python3 backend/server.py      # port 8080（API）
-cd frontend && npm run dev     # port 5173（Vite HMR）
+# 開發者（HMR）
+python3 backend/server.py        # port 8080（API）
+cd frontend && npm run dev        # port 5173（Vite HMR）
+
+# 更新前端後重啟
+bash scripts/linux/start.sh restart --build
 ```
 → `http://localhost:8080`（生產） / `http://localhost:5173`（開發）
 → Swagger UI：`http://localhost:8080/docs`
+
+**dist/ 說明：**
+- `dist/` 已 commit 進 repo，非工程師不需 Node.js 即可直接執行
+- 開發者修改前端後需執行 `npm run build` 或 `./start.sh --build` 更新 dist/
+- `node_modules/` 仍在 `.gitignore`
 
 ---
 

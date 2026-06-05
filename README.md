@@ -1,38 +1,102 @@
 # Task Manager — 多人協作任務管理系統
 
-多人協作任務管理系統，含個人便條紙看板與週報 PPT 自動生成。純 Python 標準函式庫驅動，前端無框架。
+多人協作任務管理系統，含個人便條紙看板與週報 PPT 自動生成。
 
 ---
 
 ## 需求 Requirements
 
-- **Python 3.10+**
-- **Node.js 18+**（前端開發時需要；純執行只需 Python）
-- 現代瀏覽器（Chrome / Firefox / Edge / Safari）
+| 角色 | 需求 |
+|------|------|
+| 一般使用者 | Python 3.10+、現代瀏覽器 |
+| 開發者 | Python 3.10+、Node.js 18+、現代瀏覽器 |
 
 ---
 
-## Before Start — 安裝套件
+## 快速開始（一般使用者）
 
-### 後端（Python）
+> 前端已預先 build 在 `dist/`，**不需要 Node.js**。
+
+### 1. 安裝 Python 套件
+
 ```bash
-pip install -r backend/requirements.txt
-# 或執行安裝腳本
+# Linux / macOS
 bash scripts/linux/setup.sh
+
+# Windows
+scripts\windows\setup.bat
 ```
 
-### 前端（開發環境）
+### 2. 啟動伺服器
+
 ```bash
-cd frontend && npm install
+# Linux / macOS — 前景執行
+bash scripts/linux/start.sh
+
+# Linux / macOS — 背景執行
+bash scripts/linux/start.sh start
+
+# Windows — 前景執行
+scripts\windows\start.bat
 ```
 
-> **純執行用戶**：`dist/` 已包含建置好的前端，不需要 Node.js。
+開啟瀏覽器訪問 `http://localhost:8080`
 
 ---
 
-## Start — 啟動伺服器
+## 開發者設定
 
-腳本位於 `scripts/linux/` 和 `scripts/windows/`，支援前景與背景兩種模式。
+### 1. 安裝所有套件（Python + Node.js）
+
+```bash
+bash scripts/linux/setup.sh --dev
+```
+
+### 2. 啟動（兩個 terminal）
+
+```bash
+# Terminal 1：FastAPI（API server，port 8080）
+python3 backend/server.py
+
+# Terminal 2：Vite dev server（HMR 熱更新，port 5173）
+cd frontend && npm run dev
+```
+
+訪問 `http://localhost:5173`，修改 `.vue` 元件即時更新。
+
+### 3. Build 前端（更新 dist/）
+
+```bash
+cd frontend && npm run build
+# 或透過 start.sh
+bash scripts/linux/start.sh --build
+```
+
+---
+
+## 其他指令
+
+```bash
+bash scripts/linux/start.sh stop      # 停止背景伺服器
+bash scripts/linux/start.sh restart   # 重啟
+bash scripts/linux/start.sh status    # 查看狀態
+bash scripts/linux/start.sh restart --build  # 重新 build 後重啟
+```
+
+> API 互動文件（Swagger UI）：`http://localhost:8080/docs`
+
+### Windows
+
+```bat
+scripts\windows\start.bat start    REM 背景執行
+scripts\windows\start.bat stop     REM 停止
+scripts\windows\start.bat restart  REM 重啟
+scripts\windows\start.bat status   REM 查看狀態
+```
+
+---
+
+## Start — 啟動伺服器（完整指令表）
 
 ### Linux / macOS
 
@@ -51,30 +115,12 @@ bash scripts/linux/start.sh restart
 
 # 查看執行狀態
 bash scripts/linux/start.sh status
-```
 
-### Windows
-
-```bat
-REM 前景執行（Ctrl+C 停止）
-scripts\windows\start.bat
-
-REM 背景執行
-scripts\windows\start.bat start
-
-REM 停止背景伺服器
-scripts\windows\start.bat stop
-
-REM 重啟背景伺服器
-scripts\windows\start.bat restart
-
-REM 查看執行狀態
-scripts\windows\start.bat status
+# 重新 build 前端後啟動
+bash scripts/linux/start.sh start --build
 ```
 
 啟動後開啟瀏覽器訪問：`http://localhost:8080`
-
-> API 互動文件（Swagger UI）：`http://localhost:8080/docs`
 
 ### 前端開發模式（HMR 熱更新）
 

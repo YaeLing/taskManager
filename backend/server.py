@@ -874,7 +874,36 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         print(f"[{self.address_string()}] {fmt % args}")
 
+def purge_old_history(days=30):
+    history_dir = PROJECT_ROOT / 'history'
+    if not history_dir.exists():
+        return
+    cutoff = date.today() - timedelta(days=days)
+    removed = 0
+    for f in history_dir.glob('*.jsonl'):
+        try:
+            if date.fromisoformat(f.stem) < cutoff:
+                f.unlink()
+                removed += 1
+        except ValueError:
+            pass
+    if removed:
+        print(f"🗑️  purged {removed} history file(s) older than {days} days")
+
+def _daily_purge_loop():
+    import time, datetime
+    while True:
+        now = datetime.datetime.now()
+        next_run = now.replace(hour=12, minute=0, second=0, microsecond=0)
+        if next_run <= now:
+            next_run += datetime.timedelta(days=1)
+        time.sleep((next_run - now).total_seconds())
+        purge_old_history(30)
+
 if __name__ == '__main__':
+    purge_old_history(30)
+    t = threading.Thread(target=_daily_purge_loop, daemon=True)
+    t.start()
     server = http.server.ThreadingHTTPServer((HOST, PORT), Handler)
     print(f"✅ http://{HOST}:{PORT}/")
     server.serve_forever()

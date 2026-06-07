@@ -127,7 +127,7 @@ scripts\windows\start.bat restart --build      REM Windows
 - 全局搜尋列，即時搜尋任務標題、說明、留言內容，結果高亮
 
 ### 已完成任務
-- Header「已完成」按鈕顯示 / 隱藏完成面板（位於便條紙下方）
+- 中欄 tab 切換「我的便條紙」／「已完成」，已完成面板佔滿全欄高度
 - 依本週 / 上週 / 更早分組；可拖曳回建議面板恢復
 - 已加入週報的任務顯示「▶ 週報」標籤
 
@@ -164,46 +164,37 @@ scripts\windows\start.bat restart --build      REM Windows
 ## 專案結構
 
 ```
-taskManager_git/
+taskManager/
 ├── frontend/               ← Vue 3 + Vite 專案
 │   ├── index.html          # Vite entry（掛載 #app）
 │   ├── style.css           # 全域 CSS
-│   ├── package.json
-│   ├── vite.config.js      # dev proxy + build 設定
+│   ├── package.json / vite.config.js
 │   └── src/
 │       ├── main.js         # Vue app 入口
 │       ├── App.vue         # 根元件，載入所有 store + component
 │       ├── api.js          # HTTP 呼叫層
-│       ├── composables/    # 共用工具（avHTML、esc、COLORS…）
+│       ├── composables/    # 共用工具（avHTML、esc、COLORS、isOverdue、useResizers）
 │       ├── stores/         # Pinia stores（user / tasks / notes / chat / leaves / points / sse / weekly）
-│       └── components/     # Vue 元件（SetupScreen / AppHeader / SugPanel / NotesBoard…）
-│       ├── setup-screen.html
-│       ├── header.html
-│       ├── help-modal.html
-│       ├── mob-tabs.html
-│       ├── layout.html     # 主布局（建議面板 + 便條紙 + 聊天室）
-│       ├── notes-board.html # 便條紙看板 + 已完成面板
-│       ├── matrix.html     # （保留，目前未使用）
-│       ├── drawer.html     # 任務詳情側欄
-│       ├── task-modal.html
-│       ├── leave-modal.html
-│       ├── vote-modal.html
-│       ├── note-modal.html # 便條紙類型選擇 + 編輯 modal
+│       └── components/     # Vue SFC
+│           ├── AppHeader.vue / SetupScreen.vue / HelpModal.vue / MobTabs.vue
+│           ├── SugPanel.vue / NotesBoard.vue / NoteModal.vue
+│           ├── ChatPanel.vue / TaskDrawer.vue / TaskModal.vue
+│           └── LeaveModal / VoteModal / WeeklyConfirm / WeeklyRecord / PPTModal / Notification
 │
-├── dist/                   ← vite build 產出（gitignored，FastAPI serve）
+├── dist/                   ← vite build 產出（已 commit，FastAPI serve）
 │
 ├── backend/
 │   ├── server.py           # FastAPI 應用、SSE、所有 API 路由
 │   ├── ppt_generator.py    # 週報 PPT 生成邏輯（python-pptx）
-│   └── requirements.txt    # fastapi, uvicorn, python-multipart, python-pptx
+│   └── requirements.txt    # fastapi, uvicorn[standard], python-multipart, python-pptx
+│
+├── scripts/
+│   ├── linux/setup.sh / start.sh    # Linux / macOS 安裝與啟動腳本
+│   └── windows/setup.bat / start.bat # Windows 安裝與啟動腳本
 │
 └── data/                   # runtime 資料（gitignored，server 自動建立）
-    ├── tasks.json
-    ├── users.json
-    ├── chat.json
-    ├── leaves.json
-    ├── points.json
-    ├── notes.json          # 個人便條紙資料
+    ├── tasks.json / users.json / chat.json
+    ├── leaves.json / points.json / notes.json
     ├── weekly_config.json
     └── ppt_template.pptx   # 上傳的週報模板（若有）
 ```

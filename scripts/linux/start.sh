@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# start.sh — 啟動 / 停止 Task Manager 伺服器（Linux / macOS）
+# start.sh -- Start / Stop Task Manager server (Linux / macOS)
 #
-# 用法：
-#   ./start.sh [--build]          # 前景執行（Ctrl+C 停止）
-#   ./start.sh start [--build]    # 背景執行
-#   ./start.sh stop               # 停止背景執行的伺服器
-#   ./start.sh restart [--build]  # 重啟背景伺服器
-#   ./start.sh status             # 查看執行狀態
+# Usage:
+#   ./start.sh [--build]          # Foreground (Ctrl+C to stop)
+#   ./start.sh start [--build]    # Background
+#   ./start.sh stop               # Stop background server
+#   ./start.sh restart [--build]  # Restart background server
+#   ./start.sh status             # Check server status
 #
-#   --build  啟動前先執行 npm run build 更新前端
+#   --build  Run npm run build before starting
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
@@ -18,7 +18,7 @@ PID_FILE="$ROOT_DIR/server.pid"
 LOG_FILE="$ROOT_DIR/server.log"
 PYTHON=$(command -v python3 || command -v python)
 
-# Parse --build flag (可出現在任意位置)
+# Parse --build flag (can appear anywhere)
 BUILD=0
 ARGS=()
 for arg in "$@"; do
@@ -26,24 +26,28 @@ for arg in "$@"; do
 done
 
 if [ -z "$PYTHON" ]; then
-  echo "❌ 找不到 Python，請先執行 ./setup.sh"
+  echo "[ERROR] Python not found, run ./setup.sh first"
   exit 1
 fi
 
 _build_frontend() {
   if ! command -v npm &>/dev/null; then
-    echo "❌ 找不到 npm，無法 build 前端（請先安裝 Node.js）"
+    echo "[ERROR] npm not found, cannot build frontend (install Node.js first)"
     exit 1
   fi
-  echo "🔨 Building frontend..."
+  if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+    echo "[INFO] node_modules not found, running npm install first..."
+    npm --prefix "$FRONTEND_DIR" install --silent
+  fi
+  echo "[BUILD] Building frontend..."
   npm --prefix "$FRONTEND_DIR" run build
-  echo "✅ Frontend build 完成"
+  echo "[OK] Frontend build complete"
   echo ""
 }
 
 _start_fg() {
   echo "=== Task Manager ==="
-  echo "前景模式 | http://localhost:8080 | Ctrl+C 停止"
+  echo "Foreground | http://localhost:8080 | Ctrl+C to stop"
   echo ""
   cd "$BACKEND_DIR"
   exec "$PYTHON" server.py
@@ -51,8 +55,8 @@ _start_fg() {
 
 _start_bg() {
   if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    echo "⚠️  伺服器已在背景執行（PID $(cat "$PID_FILE")）"
-    echo "   執行 ./start.sh stop 先停止，或 ./start.sh restart 重啟"
+    echo "[WARN] Server already running in background (PID $(cat "$PID_FILE"))"
+    echo "       Run ./start.sh stop first, or ./start.sh restart to restart"
     exit 1
   fi
   cd "$BACKEND_DIR"
@@ -60,12 +64,12 @@ _start_bg() {
   echo $! > "$PID_FILE"
   sleep 1
   if kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    echo "✅ 伺服器已在背景啟動（PID $(cat "$PID_FILE")）"
-    echo "   網址：http://localhost:8080"
-    echo "   日誌：$LOG_FILE"
-    echo "   停止：./start.sh stop"
+    echo "[OK] Server started in background (PID $(cat "$PID_FILE"))"
+    echo "     URL : http://localhost:8080"
+    echo "     Log : $LOG_FILE"
+    echo "     Stop: ./start.sh stop"
   else
-    echo "❌ 啟動失敗，查看日誌：$LOG_FILE"
+    echo "[ERROR] Server failed to start, check log: $LOG_FILE"
     rm -f "$PID_FILE"
     exit 1
   fi
@@ -73,25 +77,25 @@ _start_bg() {
 
 _stop() {
   if [ ! -f "$PID_FILE" ]; then
-    echo "⚠️  找不到 PID 檔，伺服器可能未在背景執行"
+    echo "[WARN] PID file not found, server may not be running in background"
     exit 0
   fi
   PID=$(cat "$PID_FILE")
   if kill -0 "$PID" 2>/dev/null; then
     kill "$PID"
     rm -f "$PID_FILE"
-    echo "✅ 伺服器已停止（PID $PID）"
+    echo "[OK] Server stopped (PID $PID)"
   else
-    echo "⚠️  PID $PID 已不存在，清除 PID 檔"
+    echo "[WARN] PID $PID no longer exists, removing PID file"
     rm -f "$PID_FILE"
   fi
 }
 
 _status() {
   if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
-    echo "✅ 執行中（PID $(cat "$PID_FILE")）| http://localhost:8080"
+    echo "[OK] Running (PID $(cat "$PID_FILE")) | http://localhost:8080"
   else
-    echo "⭕ 未執行"
+    echo "[--] Not running"
     [ -f "$PID_FILE" ] && rm -f "$PID_FILE"
   fi
 }
@@ -105,7 +109,7 @@ case "${ARGS[0]:-fg}" in
   restart)    _stop; sleep 1; _start_bg ;;
   status)     _status     ;;
   *)
-    echo "用法：$0 [start|stop|restart|status] [--build]"
+    echo "Usage: $0 [start|stop|restart|status] [--build]"
     exit 1
     ;;
 esac

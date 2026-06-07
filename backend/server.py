@@ -23,6 +23,7 @@ PPT_TEMPLATE_FILE = DATA_DIR / 'ppt_template.pptx'
 
 DATA_DIR.mkdir(exist_ok=True)
 AVATARS_DIR.mkdir(exist_ok=True)
+WEEKLY_DATA_DIR.mkdir(exist_ok=True)
 
 TASKS_FILE         = DATA_DIR / 'tasks.json'
 USERS_FILE         = DATA_DIR / 'users.json'

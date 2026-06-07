@@ -1,9 +1,9 @@
 @echo off
-REM setup.bat — 安裝 Task Manager 所需套件（Windows）
+REM setup.bat -- Install Task Manager dependencies (Windows)
 REM
-REM 用法：
-REM   setup.bat        一般使用者：僅安裝 Python 後端套件
-REM   setup.bat --dev  開發者：另外安裝前端 Node.js 套件（npm install）
+REM Usage:
+REM   setup.bat        Standard: install Python backend packages only
+REM   setup.bat --dev  Developer: also install frontend Node.js packages (npm install)
 
 setlocal EnableDelayedExpansion
 
@@ -17,71 +17,105 @@ popd
 
 echo === Task Manager Setup ===
 
-REM ── Python ─────────────────────────────────────────────────────
-where python >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] 找不到 Python，請先安裝 Python 3.10+
-    echo 下載：https://www.python.org/downloads/
+REM -- Python ----------------------------------------------------------------
+set "PYTHON_CMD="
+
+REM Try py launcher first (available in official Python installs)
+where py >nul 2>&1
+if not errorlevel 1 (
+    py --version >nul 2>&1
+    if not errorlevel 1 set "PYTHON_CMD=py"
+)
+
+REM Fall back to python (skip WindowsApps App Store stub)
+if not defined PYTHON_CMD (
+    where python >nul 2>&1
+    if not errorlevel 1 (
+        for /f "delims=" %%p in ('where python') do (
+            echo %%p | findstr /i "WindowsApps" >nul
+            if errorlevel 1 (
+                if not defined PYTHON_CMD set "PYTHON_CMD=python"
+            )
+        )
+    )
+)
+
+if not defined PYTHON_CMD (
+    echo [ERROR] Python not found (Windows Store placeholder does not count^)
+    echo         Install Python 3.10+ from https://www.python.org/downloads/
+    echo         Remember to check "Add Python to PATH" during install
     pause
     exit /b 1
 )
 
-for /f "tokens=2" %%v in ('python --version 2^>^&1') do set "PYVER=%%v"
+set "PYVER="
+for /f "tokens=2" %%v in ('"%PYTHON_CMD%" --version 2^>^&1') do set "PYVER=%%v"
+
+if not defined PYVER (
+    echo [ERROR] Cannot get Python version, check your installation
+    pause & exit /b 1
+)
+
+set "PY_MAJOR=" & set "PY_MINOR="
 for /f "tokens=1,2 delims=." %%a in ("%PYVER%") do (
     set "PY_MAJOR=%%a"
     set "PY_MINOR=%%b"
 )
-echo [OK] Python %PYVER%
+echo [OK] Python %PYVER% (command: %PYTHON_CMD%)
 
+if not defined PY_MAJOR (
+    echo [ERROR] Cannot parse Python version: %PYVER%
+    pause & exit /b 1
+)
 if %PY_MAJOR% LSS 3 (
-    echo [ERROR] 需要 Python 3.10 以上，目前為 %PYVER%
+    echo [ERROR] Requires Python 3.10+, found %PYVER%
     pause & exit /b 1
 )
 if %PY_MAJOR% EQU 3 if %PY_MINOR% LSS 10 (
-    echo [ERROR] 需要 Python 3.10 以上，目前為 %PYVER%
+    echo [ERROR] Requires Python 3.10+, found %PYVER%
     pause & exit /b 1
 )
 
-echo 安裝後端套件（fastapi, uvicorn, python-pptx）...
-python -m pip install -r "%ROOT_DIR%\backend\requirements.txt" --quiet
+echo Installing backend packages (fastapi, uvicorn, python-pptx^)...
+%PYTHON_CMD% -m pip install -r "%ROOT_DIR%\backend\requirements.txt" --quiet
 if errorlevel 1 (
-    echo [ERROR] 後端套件安裝失敗
+    echo [ERROR] Backend package install failed
     pause & exit /b 1
 )
-echo [OK] 後端套件完成
+echo [OK] Backend packages installed
 
-REM ── Node.js（--dev 模式）────────────────────────────────────────
+REM -- Node.js (--dev mode) --------------------------------------------------
 if "%DEV%"=="1" (
     echo.
     where node >nul 2>&1
     if errorlevel 1 (
-        echo [ERROR] 找不到 Node.js，請先安裝 Node.js 18+
-        echo 下載：https://nodejs.org/
+        echo [ERROR] Node.js not found, please install Node.js 18+
+        echo         Download: https://nodejs.org/
         pause & exit /b 1
     )
     where npm >nul 2>&1
     if errorlevel 1 (
-        echo [ERROR] 找不到 npm
+        echo [ERROR] npm not found
         pause & exit /b 1
     )
     for /f "tokens=*" %%v in ('node --version') do echo [OK] Node.js %%v
-    echo 安裝前端套件（vue, vite, pinia）...
+    echo Installing frontend packages (vue, vite, pinia^)...
     npm --prefix "%ROOT_DIR%\frontend" install --silent
     if errorlevel 1 (
-        echo [ERROR] 前端套件安裝失敗
+        echo [ERROR] Frontend package install failed
         pause & exit /b 1
     )
-    echo [OK] 前端套件完成
+    echo [OK] Frontend packages installed
 )
 
 echo.
 if "%DEV%"=="1" (
-    echo [OK] 安裝完成（開發模式）
-    echo      執行伺服器：start.bat
-    echo      前端開發：  cd frontend ^&^& npm run dev
-    echo      重新 Build：start.bat --build  或  cd frontend ^&^& npm run build
+    echo [OK] Setup complete (dev mode^)
+    echo      Start server : start.bat
+    echo      Frontend dev : cd frontend ^&^& npm run dev
+    echo      Rebuild      : start.bat --build  or  cd frontend ^&^& npm run build
 ) else (
-    echo [OK] 安裝完成
-    echo      執行伺服器：start.bat
+    echo [OK] Setup complete
+    echo      Start server : start.bat
 )
 pause

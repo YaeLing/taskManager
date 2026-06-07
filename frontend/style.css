@@ -24,7 +24,8 @@
 
 html { font-size: 19.2px; }
 html, body { height: 100%; overflow: hidden; }
-@media (max-width: 639px) { html, body { height: auto; min-height: 100svh; overflow: auto; } }
+#app { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+@media (max-width: 639px) { html, body { height: auto; min-height: 100svh; overflow: auto; } #app { flex: none; height: auto; min-height: 100svh; overflow: auto; } }
 
 body {
   background: var(--bg);
@@ -1018,14 +1019,30 @@ mark { background: none; color: inherit; }
 }
 .notes-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px 10px;
+  padding: 6px 14px 6px;
   flex-shrink: 0;
   border-bottom: 1px solid var(--border2);
   background: rgba(250,248,244,.6);
+  gap: 8px;
 }
-.notes-head-left { display: flex; align-items: center; gap: 8px; }
-.notes-head-left h2 { font-size: .88rem; font-weight: 700; color: var(--text); }
-.notes-count { font-size: .72rem; color: var(--dim); background: var(--s2); border-radius: 20px; padding: 2px 8px; }
+.nb-tabs { display: flex; gap: 2px; }
+.nb-tab {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 13px; font-size: .78rem; font-weight: 600;
+  border: none; border-radius: 8px; cursor: pointer; font-family: inherit;
+  background: transparent; color: var(--dim);
+  transition: background .15s, color .15s;
+}
+.nb-tab:hover { background: var(--s2); color: var(--text); }
+.nb-tab.active { background: var(--acc); color: #fff; }
+.nb-tab.active .nb-tab-badge { background: rgba(255,255,255,.25); color: #fff; }
+.nb-tab-badge {
+  font-family: var(--mono); font-size: .62rem; font-weight: 700;
+  padding: 1px 7px; border-radius: 999px;
+  background: var(--s2); color: var(--dim);
+  border: 1px solid var(--border2);
+  transition: background .15s, color .15s;
+}
 .notes-add-btn {
   display: flex; align-items: center; gap: 5px;
   background: var(--acc); color: #fff; border: none;

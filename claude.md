@@ -94,8 +94,8 @@ taskManager_git/
 - `vite.config.js`：dev 模式 proxy `/api`、`/avatars`、`/weekly_data` → FastAPI port 8080
 
 **路徑常數（backend/server.py）：**
-- `PROJECT_ROOT` = taskManager_git/（backend/ 的上層）
-- `SERVE_DIR` = `PROJECT_ROOT / 'frontend'`（SPA fallback catch-all route）
+- `PROJECT_ROOT` = taskManager/（backend/ 的上層）
+- `SERVE_DIR` = `dist/`（若存在）否則 `frontend/`（SPA fallback）
 - `DATA_DIR` = `PROJECT_ROOT / 'data'`
 - 靜態資源：`/avatars` / `/weekly_data` 由 `StaticFiles` mount 服務
 
@@ -108,13 +108,13 @@ taskManager_git/
 
 **儲存：** `save()` 防抖 100ms → POST `/api/tasks` → SSE 廣播 → 所有人同步
 
-**渲染：** `render()` 是主渲染入口，重繪建議面板 + 已完成；四象限元素有 null guard（已移除）
+**Drawer：** `openDrawer(id)` 開側欄（App.vue），`tasksStore.openTaskId` 記錄當前開啟的 task id；含編輯、複製連結、刪除任務按鈕
 
-**Drawer：** `openDrawer(id)` 開側欄，`openTaskId` 記錄當前開啟的 task id；含編輯、複製連結、刪除任務按鈕（第二行）
+**便條紙：** `notesStore.notes[]` per-user；`notesStore.openTypePicker()` → 選類型 → `startNew(type)` → `editModalOpen = true`；`toggleItem(noteId, idx, userName)` 直接切換 checkbox 並存檔
 
-**便條紙：** `_notes[]` per-user，`loadNotes()` / `renderNotes()` / `toggleNoteItem(noteId, idx)` 直接切換 checkbox；`openNoteTypePicker()` → 選類型 → `_openNoteModal()`
+**已完成 tab：** `tasksStore.doneVisible` 控制中欄 tab（NotesBoard.vue），`false` = 便條紙、`true` = 已完成；不再有 header 按鈕
 
-**使用手冊：** `toggleHelp()` / `closeHelp(event)` 控制 `#help-overlay` modal
+**使用手冊：** `helpOpen` ref（App.vue）控制 HelpModal，由 AppHeader emit `toggleHelp`
 
 **週報流程：** Task done → 確認視窗 → 填說明 + 圖片 → 存 `weekly_data/` → PPT modal 上傳模板 → 生成週報
 

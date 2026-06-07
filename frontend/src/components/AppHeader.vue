@@ -34,12 +34,6 @@
       </svg>
       <span>週報</span>
     </button>
-    <button class="h-done-btn" :class="{ active: tasksStore.doneVisible }" @click="tasksStore.doneVisible = !tasksStore.doneVisible">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
-        <polyline points="20 6 9 17 4 12"/>
-      </svg>
-      <span>已完成</span>
-    </button>
     <button class="h-help-btn" @click="$emit('toggleHelp')">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
         <circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>

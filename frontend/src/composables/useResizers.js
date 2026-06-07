@@ -23,8 +23,6 @@ export function initResizers() {
 
   makeResizer('resizer-left',  () => sug,  dx =>  dx, 'col_sug_w', layout)
   makeResizer('resizer-right', () => chat, dx => -dx, 'col_chat_w', layout)
-
-  initDoneResizer()
 }
 
 function makeResizer(resizerId, getPanel, getDirection, storageKey, layout) {
@@ -61,36 +59,3 @@ function makeResizer(resizerId, getPanel, getDirection, storageKey, layout) {
   })
 }
 
-function initDoneResizer() {
-  const done   = document.querySelector('.completed-section')
-  const handle = document.getElementById('resizer-done')
-  if (!done || !handle || handle._resizerBound) return
-  handle._resizerBound = true
-
-  const savedDone = localStorage.getItem('col_done_w')
-  if (savedDone) { done.style.flex = 'none'; done.style.width = savedDone + 'px' }
-
-  handle.addEventListener('mousedown', e => {
-    e.preventDefault()
-    const startX = e.clientX, startW = done.offsetWidth
-    handle.classList.add('active')
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-
-    function onMove(ev) {
-      const nw = Math.max(140, Math.min(500, startW - (ev.clientX - startX)))
-      done.style.flex = 'none'
-      done.style.width = nw + 'px'
-    }
-    function onUp() {
-      handle.classList.remove('active')
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-      localStorage.setItem('col_done_w', parseInt(done.style.width))
-      document.removeEventListener('mousemove', onMove)
-      document.removeEventListener('mouseup', onUp)
-    }
-    document.addEventListener('mousemove', onMove)
-    document.addEventListener('mouseup', onUp)
-  })
-}

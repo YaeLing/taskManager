@@ -1,16 +1,28 @@
 <template>
   <div class="notes-area">
+
+    <!-- Tab header -->
     <div class="notes-head">
-      <div class="notes-head-left">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2.2" stroke-linecap="round">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14 2 14 8 20 8"/>
-          <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-        </svg>
-        <h2>我的便條紙</h2>
-        <span class="notes-count">{{ notesStore.notes.length }} / {{ NOTE_MAX }}</span>
+      <div class="nb-tabs">
+        <button class="nb-tab" :class="{ active: !tasksStore.doneVisible }"
+                @click="tasksStore.doneVisible = false">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14 2 14 8 20 8"/>
+          </svg>
+          我的便條紙
+          <span class="nb-tab-badge">{{ notesStore.notes.length }}/{{ NOTE_MAX }}</span>
+        </button>
+        <button class="nb-tab" :class="{ active: tasksStore.doneVisible }"
+                @click="tasksStore.doneVisible = true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+          已完成
+          <span class="nb-tab-badge">{{ tasksStore.doneTasks.length }}</span>
+        </button>
       </div>
-      <button class="notes-add-btn" @click="openPicker">
+      <button v-if="!tasksStore.doneVisible" class="notes-add-btn" @click="openPicker">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
@@ -18,7 +30,8 @@
       </button>
     </div>
 
-    <div class="notes-grid">
+    <!-- Notes grid -->
+    <div v-show="!tasksStore.doneVisible" class="notes-grid">
       <div v-if="!notesStore.notes.length" class="notes-empty">
         點擊「＋ 新增」建立第一張便條紙
       </div>
@@ -26,12 +39,10 @@
            class="note-card" :data-color="note.color || 'default'"
            :style="colorStyle(note.color)"
            @click="notesStore.openEdit(note.id)">
-        <!-- text / rich -->
         <template v-if="note.type !== 'checklist'">
           <div v-if="note.title" class="note-card-title">{{ note.title }}</div>
           <div v-if="note.body" class="note-card-body">{{ note.body }}</div>
         </template>
-        <!-- checklist -->
         <template v-else>
           <div v-if="note.title" class="note-card-title">{{ note.title }}</div>
           <div v-for="(item, i) in (note.items || []).slice(0, 6)" :key="i"
@@ -48,42 +59,36 @@
       </div>
     </div>
 
-    <!-- Done section -->
-    <template v-if="tasksStore.doneVisible">
-      <div class="col-resizer col-resizer--done" style="cursor:row-resize;width:auto;height:4px;border-left:none;border-top:1px solid var(--border2)"></div>
-      <div class="completed-section" style="min-width:0;min-height:180px;max-height:45%;border-left:none;border-top:1px solid var(--border2)">
-        <div class="done-header">
-          <div class="done-dot"></div>
-          <span class="done-title">已完成</span>
-          <span class="done-badge">{{ tasksStore.doneTasks.length }}</span>
-        </div>
-        <div class="done-tasks"
-             @dragover.prevent="onDoneDragOver"
-             @drop.prevent="onDoneDrop"
-             @dragleave="doneDragOver = false">
-          <div v-if="!tasksStore.doneTasks.length" style="color:var(--dim);font-size:.72rem;opacity:.4;padding:4px">
-            {{ tasksStore.searchQuery ? '無符合結果' : '尚無完成任務' }}
+    <!-- Done tasks -->
+    <div v-show="tasksStore.doneVisible"
+         class="done-tasks"
+         :class="{ 'drag-over': doneDragOver }"
+         @dragover.prevent="onDoneDragOver"
+         @drop.prevent="onDoneDrop"
+         @dragleave="doneDragOver = false">
+      <div v-if="!tasksStore.doneTasks.length"
+           style="color:var(--dim);font-size:.72rem;opacity:.4;padding:20px;text-align:center">
+        {{ tasksStore.searchQuery ? '無符合結果' : '尚無完成任務' }}
+      </div>
+      <div v-for="(t, i) in groupedDone" :key="t.id || t._group">
+        <div v-if="t._group" class="done-group-label">{{ t._group }}</div>
+        <div v-else class="done-card" draggable="true"
+             @dragstart="onDoneDragStart(t.id)">
+          <div class="done-card-top" style="cursor:pointer" @click="$emit('openDrawer', t.id)">
+            <span class="done-num">{{ t._idx + 1 }}.</span>
+            <div class="done-qdot" :style="{ background: COLORS[t.q] }"></div>
+            <span class="done-text">{{ t.text }}</span>
+            <span v-if="t.doneAt" class="done-date">{{ t.doneAt.slice(0, 10) }}</span>
           </div>
-          <div v-for="(t, i) in groupedDone" :key="t.id || t._group">
-            <div v-if="t._group" class="done-group-label">{{ t._group }}</div>
-            <div v-else class="done-card" draggable="true"
-                 @dragstart="onDoneDragStart(t.id)">
-              <div class="done-card-top" style="cursor:pointer" @click="$emit('openDrawer', t.id)">
-                <span class="done-num">{{ t._idx + 1 }}.</span>
-                <div class="done-qdot" :style="{ background: COLORS[t.q] }"></div>
-                <span class="done-text">{{ t.text }}</span>
-                <span v-if="t.doneAt" class="done-date">{{ t.doneAt.slice(0, 10) }}</span>
-              </div>
-              <div class="done-card-bot">
-                <button class="done-btn" @click.stop="restore(t)">↩ 恢復</button>
-                <span class="done-btn" style="cursor:pointer" @click.stop="$emit('openDrawer', t.id)">💬 {{ (t.comments || []).length }}</span>
-                <button class="done-del" @click.stop="tasksStore.deleteTask(t.id)">✕</button>
-              </div>
-            </div>
+          <div class="done-card-bot">
+            <button class="done-btn" @click.stop="restore(t)">↩ 恢復</button>
+            <span class="done-btn" style="cursor:pointer" @click.stop="$emit('openDrawer', t.id)">💬 {{ (t.comments || []).length }}</span>
+            <button class="done-del" @click.stop="tasksStore.deleteTask(t.id)">✕</button>
           </div>
         </div>
       </div>
-    </template>
+    </div>
+
   </div>
 </template>
 
@@ -125,7 +130,6 @@ async function deleteNote(id) {
   await notesStore.deleteNote(id, userStore.profile?.name)
 }
 
-// Done task grouping
 const groupedDone = computed(() => {
   const done = tasksStore.doneTasks
   const now  = new Date()

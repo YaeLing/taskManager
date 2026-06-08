@@ -21,9 +21,15 @@
         <div v-for="t in eligibleTasks" :key="t.id"
              class="vote-task-item" :class="{ selected: pointsStore.selectedTaskId === t.id }"
              @click="pointsStore.selectedTaskId = t.id">
-          <div class="vote-task-text">{{ t.text }}</div>
-          <div class="vote-task-handler" v-for="h in (t.handlers || [])" :key="h.name">
-            <span>{{ h.name }}</span>
+          <div class="vote-task-qdot" :style="{ background: COLORS[t.q] }"></div>
+          <div class="vote-task-body">
+            <div class="vote-task-text">{{ t.text }}</div>
+            <div class="vote-task-handlers">
+              <span style="font-size:.62rem;color:var(--dim);margin-right:2px">接手：</span>
+              <span v-for="h in (t.handlers || [])" :key="h.name" class="vote-handler-chip">
+                <span class="vote-handler-av" v-html="avHTML(h.avatar, 14, h.avatar_type)"></span>{{ h.name }}
+              </span>
+            </div>
           </div>
         </div>
         <button v-if="pointsStore.selectedTaskId" class="vote-confirm-btn" @click="confirmVote">
@@ -39,6 +45,7 @@ import { computed } from 'vue'
 import { usePointsStore } from '../stores/points.js'
 import { useTasksStore }  from '../stores/tasks.js'
 import { useUserStore }   from '../stores/user.js'
+import { COLORS, avHTML }  from '../composables/useAvatar.js'
 
 const pointsStore = usePointsStore()
 const tasksStore  = useTasksStore()

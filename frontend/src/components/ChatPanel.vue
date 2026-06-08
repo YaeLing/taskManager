@@ -133,9 +133,11 @@ function fmtTime(iso) {
   return d.toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })
 }
 
+function fmtDate(d) { return d ? d.slice(5) : '' }  // YYYY-MM-DD → MM-DD
 function dateLabel(l) {
-  if (l.endDate && l.endDate !== l.date) return `${l.date} ～ ${l.endDate}`
-  return l.date
+  const isRange = l.endDate && l.endDate !== l.date
+  if (isToday(l)) return isRange ? `今天（${fmtDate(l.date)} ~ ${fmtDate(l.endDate)}）` : '今天'
+  return isRange ? `${fmtDate(l.date)} ~ ${fmtDate(l.endDate)}` : fmtDate(l.date)
 }
 function isToday(l) {
   const today = new Date().toISOString().slice(0, 10)

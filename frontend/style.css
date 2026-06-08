@@ -1061,6 +1061,121 @@ mark { background: none; color: inherit; }
   padding: 40px 20px; column-span: all;
 }
 
+/* ── View toggle (grid / calendar) ── */
+.notes-head-right { display: flex; align-items: center; gap: 8px; }
+.notes-view-toggle {
+  display: flex; gap: 2px; padding: 2px;
+  background: var(--s2); border-radius: 8px; border: 1px solid var(--border2);
+}
+.nvt-btn {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 24px; border: none; border-radius: 6px;
+  background: transparent; color: var(--dim); cursor: pointer;
+  transition: background .15s, color .15s;
+}
+.nvt-btn:hover { color: var(--text); }
+.nvt-btn.active { background: var(--acc); color: #fff; }
+
+/* ── Notes calendar (Gantt) ── */
+.notes-cal {
+  flex: 1; min-height: 0; display: flex; flex-direction: column;
+  overflow-y: auto; padding: 12px 14px 16px;
+}
+.cal-toolbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-bottom: 10px; flex-wrap: wrap;
+}
+.cal-nav { display: flex; align-items: center; gap: 8px; }
+.cal-nav-btn {
+  width: 26px; height: 26px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--border2); background: var(--panel);
+  color: var(--text); font-size: 1rem; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.cal-nav-btn:hover { border-color: var(--acc); color: var(--acc); }
+.cal-title { font-size: .85rem; font-weight: 700; color: var(--text); min-width: 96px; text-align: center; }
+.cal-today-btn {
+  margin-left: 4px; padding: 4px 11px; border-radius: 7px; cursor: pointer;
+  border: 1px solid var(--border2); background: var(--panel);
+  color: var(--dim); font-size: .72rem; font-weight: 600; font-family: inherit;
+}
+.cal-today-btn:hover { border-color: var(--acc); color: var(--acc); }
+.cal-showall {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  font-size: .74rem; font-weight: 600; color: var(--dim);
+}
+.cal-showall input { accent-color: var(--acc); cursor: pointer; }
+
+.cal-dow {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  border: 1px solid var(--border2); border-bottom: none;
+  border-radius: 8px 8px 0 0; overflow: hidden; background: var(--s2);
+}
+.cal-dow-cell {
+  text-align: center; padding: 5px 0; font-size: .68rem; font-weight: 700;
+  color: var(--dim); border-right: 1px solid var(--border2);
+}
+.cal-dow-cell:last-child { border-right: none; }
+
+.cal-body {
+  border: 1px solid var(--border2); border-radius: 0 0 8px 8px;
+  overflow: hidden; background: var(--panel);
+}
+.cal-week { border-bottom: 1px solid var(--border2); }
+.cal-week:last-child { border-bottom: none; }
+.cal-daynums { display: grid; grid-template-columns: repeat(7, 1fr); }
+.cal-daynum {
+  font-size: .68rem; font-weight: 600; color: var(--dim);
+  padding: 3px 6px; border-right: 1px solid var(--s2);
+}
+.cal-daynum:last-child { border-right: none; }
+.cal-daynum.dim { opacity: .38; }
+.cal-daynum.today {
+  color: #fff; font-weight: 700;
+}
+.cal-daynum.today::before {
+  content: ''; display: inline-block; vertical-align: -1px;
+}
+.cal-daynum.today {
+  background: linear-gradient(180deg, rgba(90,148,144,.16), transparent);
+  color: var(--acc);
+}
+
+.cal-bars {
+  --cal-bar-h: 19px;
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  gap: 2px; padding: 1px 1px 4px; min-height: 6px;
+}
+.cal-bar {
+  height: var(--cal-bar-h); border-radius: 3px; cursor: pointer;
+  overflow: hidden; display: flex; align-items: center;
+  background: var(--bar-c); border: 1px solid rgba(0,0,0,.08);
+  border-left-width: 0; border-right-width: 0;
+  transition: filter .12s;
+}
+.cal-bar:hover { filter: brightness(.94); }
+.cal-bar.start { border-top-left-radius: 9px; border-bottom-left-radius: 9px; border-left-width: 1px; }
+.cal-bar.end   { border-top-right-radius: 9px; border-bottom-right-radius: 9px; border-right-width: 1px; }
+.cal-bar-lbl {
+  font-size: .66rem; font-weight: 600; line-height: 1;
+  padding: 0 7px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* 便條紙色帶：淺底深字；任務色帶：深底白字 */
+.cal-bar.note .cal-bar-lbl { color: var(--text); }
+.cal-bar.mine, .cal-bar.other { color: #fff; }
+.cal-bar.mine .cal-bar-lbl, .cal-bar.other .cal-bar-lbl { color: #fff; }
+.cal-bar.other { opacity: .72; }
+
+.cal-legend {
+  display: flex; gap: 16px; margin-top: 10px;
+  font-size: .7rem; color: var(--dim);
+}
+.cal-leg-item { display: flex; align-items: center; gap: 5px; }
+.cal-leg-dot { width: 14px; height: 9px; border-radius: 3px; display: inline-block; }
+.cal-leg-dot.note  { background: #dfe6ee; border: 1px solid rgba(0,0,0,.1); }
+.cal-leg-dot.mine  { background: var(--acc); }
+.cal-leg-dot.other { background: var(--q4); opacity: .72; }
+
 /* ── Note Card ── */
 .note-card {
   break-inside: avoid; margin-bottom: 12px;
@@ -1185,6 +1300,19 @@ mark { background: none; color: inherit; }
   transition: color .12s;
 }
 .nem-cl-add:hover { color: var(--acc); }
+
+/* ── Modal start-time row ── */
+.nem-start {
+  display: flex; align-items: center; gap: 10px;
+  padding: 4px 16px 0;
+}
+.nem-start-lbl { font-size: .72rem; font-weight: 600; color: var(--dim); }
+.nem-start-input {
+  border: 1px solid var(--border2); border-radius: 8px;
+  padding: 5px 10px; font-size: .76rem; font-family: inherit;
+  color: var(--text); background: rgba(255,255,255,.5);
+}
+.nem-start-input:focus { outline: none; border-color: var(--acc); box-shadow: 0 0 0 2px rgba(90,148,144,.12); }
 
 /* ── Modal footer ── */
 .nem-foot {

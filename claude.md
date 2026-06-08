@@ -112,6 +112,8 @@ taskManager_git/
 
 **便條紙：** `notesStore.notes[]` per-user；`notesStore.openTypePicker()` → 選類型 → `startNew(type)` → `editModalOpen = true`；`toggleItem(noteId, idx, userName)` 直接切換 checkbox 並存檔
 
+**便條紙日曆／甘特圖：** `notesStore.viewMode`（`'grid'|'calendar'`）切換格狀／日曆；`NotesCalendar.vue` 為月曆甘特圖，便條紙色帶 = `startAt → startAt+2 個月`（`noteEnd()`），任務色帶 = `createdAt → due`。單格內優先序：我的便條紙 → 我處理的任務 →（勾選 `notesStore.showAllTasks` 後）其他任務依 `tasksStore.sugTasks` 排序。每週列以貪婪 lane packing 排色帶。
+
 **已完成 tab：** `tasksStore.doneVisible` 控制中欄 tab（NotesBoard.vue），`false` = 便條紙、`true` = 已完成；不再有 header 按鈕
 
 **使用手冊：** `helpOpen` ref（App.vue）控制 HelpModal，由 AppHeader emit `toggleHelp`
@@ -149,6 +151,7 @@ taskManager_git/
   body,                      // 純文字或內文
   items: [{text, done}],     // checklist 項目
   color,                     // 顏色 key（'default'|'red'|'orange'|...）
+  startAt,                   // 開始日 'YYYY-MM-DD'（日曆/甘特圖用，預設今天）
   createdAt, updatedAt
 }
 ```

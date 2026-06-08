@@ -48,6 +48,11 @@
         </button>
       </div>
 
+      <div class="nem-start">
+        <label class="nem-start-lbl">開始時間</label>
+        <input type="date" v-model="localStart" class="nem-start-input">
+      </div>
+
       <div class="nem-foot">
         <div class="nem-colors">
           <button v-for="c in NOTE_COLORS" :key="c.key"
@@ -68,7 +73,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { useNotesStore, NOTE_COLORS } from '../stores/notes.js'
+import { useNotesStore, NOTE_COLORS, todayStr } from '../stores/notes.js'
 import { useUserStore } from '../stores/user.js'
 
 const notesStore = useNotesStore()
@@ -78,6 +83,7 @@ const localTitle = ref('')
 const localBody  = ref('')
 const localColor = ref('default')
 const localItems = ref([])
+const localStart = ref('')
 
 const editType = computed(() => notesStore.editNote?.type || 'text')
 
@@ -98,6 +104,7 @@ watch(() => notesStore.editNote, (n) => {
   localBody.value  = n.body  || ''
   localColor.value = n.color || 'default'
   localItems.value = JSON.parse(JSON.stringify(n.items || []))
+  localStart.value = n.startAt || todayStr()
 }, { immediate: true })
 
 async function onSave() {
@@ -106,6 +113,7 @@ async function onSave() {
     title: localTitle.value,
     body: localBody.value,
     color: localColor.value,
+    startAt: localStart.value || todayStr(),
   }
   await notesStore.saveNote(userStore.profile?.name, note, localItems.value)
 }

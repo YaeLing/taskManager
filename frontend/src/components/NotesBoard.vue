@@ -22,16 +22,33 @@
           <span class="nb-tab-badge">{{ tasksStore.doneTasks.length }}</span>
         </button>
       </div>
-      <button v-if="!tasksStore.doneVisible" class="notes-add-btn" @click="openPicker">
-        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
-          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-        </svg>
-        新增
-      </button>
+      <div v-if="!tasksStore.doneVisible" class="notes-head-right">
+        <div class="notes-view-toggle">
+          <button class="nvt-btn" :class="{ active: notesStore.viewMode === 'grid' }"
+                  @click="notesStore.viewMode = 'grid'" title="格狀">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+          </button>
+          <button class="nvt-btn" :class="{ active: notesStore.viewMode === 'calendar' }"
+                  @click="notesStore.viewMode = 'calendar'" title="日曆">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+              <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18"/><path d="M8 2v4"/><path d="M16 2v4"/>
+            </svg>
+          </button>
+        </div>
+        <button class="notes-add-btn" @click="openPicker">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          新增
+        </button>
+      </div>
     </div>
 
     <!-- Notes grid -->
-    <div v-show="!tasksStore.doneVisible" class="notes-grid">
+    <div v-show="!tasksStore.doneVisible && notesStore.viewMode === 'grid'" class="notes-grid">
       <div v-if="!notesStore.notes.length" class="notes-empty">
         點擊「＋ 新增」建立第一張便條紙
       </div>
@@ -58,6 +75,10 @@
         <button class="note-card-del" @click.stop="deleteNote(note.id)" title="刪除">✕</button>
       </div>
     </div>
+
+    <!-- Notes calendar (Gantt) -->
+    <NotesCalendar v-if="!tasksStore.doneVisible && notesStore.viewMode === 'calendar'"
+                   @openDrawer="$emit('openDrawer', $event)" />
 
     <!-- Done tasks -->
     <div v-show="tasksStore.doneVisible"
@@ -98,6 +119,7 @@ import { useNotesStore, NOTE_MAX, NOTE_COLORS } from '../stores/notes.js'
 import { useTasksStore } from '../stores/tasks.js'
 import { useUserStore }  from '../stores/user.js'
 import { COLORS } from '../composables/useAvatar.js'
+import NotesCalendar from './NotesCalendar.vue'
 
 defineEmits(['openDrawer'])
 

@@ -6,25 +6,35 @@
           <path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/>
         </svg>
         <h2>建議執行順序</h2>
-        <span class="sug-badge">{{ tasksStore.sugTasks.length }}</span>
+        <span class="sug-badge">{{ filteredSugTasks.length }}</span>
       </div>
       <div class="sug-sub">依象限優先級 ＋ 截止日期排序</div>
     </div>
 
-    <!-- Tag filters -->
-    <div class="sug-tag-filters" v-if="tasksStore.allTags.length">
-      <button v-for="tag in tasksStore.allTags" :key="tag"
-              class="sug-filter-tag" :class="{ active: tasksStore.sugFilterTags.has(tag) }"
-              @click="tasksStore.toggleSugFilter(tag)">{{ tag }}</button>
+    <!-- Filters -->
+    <div class="sug-filters">
+      <button class="sug-filter-mine" :class="{ active: tasksStore.sugFilterMine }"
+              @click="tasksStore.toggleSugFilterMine()" title="只顯示我接手的任務">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+          <circle cx="12" cy="7" r="4"/>
+        </svg>
+        我的
+      </button>
+      <div class="sug-tag-filters" v-if="tasksStore.allTags.length">
+        <button v-for="tag in tasksStore.allTags" :key="tag"
+                class="sug-filter-tag" :class="{ active: tasksStore.sugFilterTags.has(tag) }"
+                @click="tasksStore.toggleSugFilter(tag)">{{ tag }}</button>
+      </div>
     </div>
 
     <!-- Task list -->
     <div class="sug-list">
-      <div v-if="!tasksStore.sugTasks.length" class="sug-empty"
+      <div v-if="!filteredSugTasks.length" class="sug-empty"
            style="color:var(--dim);font-size:.75rem;padding:16px;text-align:center">
-        {{ tasksStore.searchQuery ? '無符合結果' : '目前沒有待辦任務' }}
+        {{ tasksStore.searchQuery ? '無符合結果' : (tasksStore.sugFilterMine ? '沒有我接手的任務' : '目前沒有待辦任務') }}
       </div>
-      <div v-for="(t, i) in tasksStore.sugTasks" :key="t.id"
+      <div v-for="(t, i) in filteredSugTasks" :key="t.id"
            class="sug-item" :style="{ '--ic': COLORS[t.q] }"
            @click="$emit('openDrawer', t.id)">
         <span class="sug-rank">{{ i + 1 }}</span>
@@ -67,6 +77,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useTasksStore } from '../stores/tasks.js'
 import { useUserStore }  from '../stores/user.js'
 import { useWeeklyStore } from '../stores/weekly.js'
@@ -77,6 +88,17 @@ defineEmits(['openDrawer'])
 const tasksStore  = useTasksStore()
 const userStore   = useUserStore()
 const weeklyStore = useWeeklyStore()
+
+const filteredSugTasks = computed(() => {
+  let list = tasksStore.sugTasks
+  if (tasksStore.sugFilterMine) {
+    const name = userStore.profile?.name
+    if (name) {
+      list = list.filter(t => (t.handlers || []).some(h => h.name === name))
+    }
+  }
+  return list
+})
 
 function highlight(text) {
   if (!tasksStore.searchQuery) return text || ''

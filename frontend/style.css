@@ -478,7 +478,13 @@ mark { background: none; color: inherit; }
   border: 1px solid rgba(90,148,144,.2);
 }
 .sug-sub { font-size: .73rem; color: var(--dim); }
-.sug-tag-filters { display:flex; flex-wrap:wrap; gap:4px; padding:4px 14px 6px; }
+.sug-filters { display:flex; align-items:center; gap:8px; padding:6px 14px; }
+.sug-filter-mine { display:flex; align-items:center; gap:4px; background:transparent; border:1px solid var(--border2); border-radius:999px; padding:3px 10px 3px 8px; cursor:pointer; font-size:.68rem; color:var(--dim); transition:all .15s; white-space:nowrap; font-family:inherit; flex-shrink:0; }
+.sug-filter-mine:hover { border-color:var(--acc); color:var(--acc); }
+.sug-filter-mine.active { background:rgba(90,148,144,.15); border-color:var(--acc); color:var(--acc); }
+.sug-filter-mine svg { opacity:.7; }
+.sug-filter-mine.active svg { opacity:1; }
+.sug-tag-filters { display:flex; flex-wrap:wrap; gap:4px; }
 .sug-filter-tag { background:transparent; border:1px solid var(--border2); border-radius:999px; padding:1px 8px; cursor:pointer; font-size:.65rem; color:var(--dim); transition:all .15s; white-space:nowrap; font-family:inherit; }
 .sug-filter-tag:hover { border-color:var(--acc); color:var(--acc); }
 .sug-filter-tag.active { background:rgba(90,148,144,.15); border-color:var(--acc); color:var(--acc); }

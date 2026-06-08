@@ -12,6 +12,7 @@ export const useTasksStore = defineStore('tasks', () => {
   const doneVisible = ref(false)
   const editTags    = ref([])
   const sugFilterTags = ref(new Set())
+  const sugFilterMine = ref(false)
 
   // Save debounce
   let _saveTimer = null
@@ -130,11 +131,16 @@ export const useTasksStore = defineStore('tasks', () => {
     else sugFilterTags.value.add(tag)
   }
 
+  function toggleSugFilterMine() {
+    sugFilterMine.value = !sugFilterMine.value
+  }
+
   return {
     tasks, searchQuery, editId, dragId, openTaskId,
-    doneVisible, editTags, sugFilterTags,
+    doneVisible, editTags, sugFilterTags, sugFilterMine,
     activeTasks, doneTasks, allActiveTasks, sugTasks, allTags,
     load, save, setTasks, addTask, updateTask, deleteTask,
-    moveTask, toggleDone, addComment, toggleLike, claimTask, toggleSugFilter,
+    moveTask, toggleDone, addComment, toggleLike, claimTask,
+    toggleSugFilter, toggleSugFilterMine,
   }
 })

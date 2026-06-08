@@ -15,20 +15,6 @@ export const NOTE_COLORS = [
   { key: 'pink',    hex: '#f8d8ec', label: '粉' },
 ]
 
-// 本地日期字串 'YYYY-MM-DD'（避免 toISOString 的 UTC 位移）
-export function todayStr(d = new Date()) {
-  const z = n => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}`
-}
-
-// 便條紙結束日 = 開始日 + 2 個月（甘特圖用，不儲存）
-export function noteEnd(startAt) {
-  if (!startAt) return null
-  const [y, m, d] = startAt.split('-').map(Number)
-  const dt = new Date(y, (m - 1) + 2, d)
-  return todayStr(dt)
-}
-
 export const useNotesStore = defineStore('notes', () => {
   const notes         = ref([])
   const typePickerOpen = ref(false)
@@ -36,8 +22,6 @@ export const useNotesStore = defineStore('notes', () => {
   const editNote       = ref(null)
   const editClItems    = ref([])
   const isEditing      = ref(false)   // true = editing existing, false = new
-  const viewMode       = ref('grid')  // 'grid' | 'calendar'
-  const showAllTasks   = ref(false)   // 日曆：顯示所有任務（含非我處理）
 
   async function load(userName) {
     if (!userName) return
@@ -56,7 +40,7 @@ export const useNotesStore = defineStore('notes', () => {
 
   function startNew(type) {
     typePickerOpen.value = false
-    editNote.value = { id: Date.now().toString(), type, color: 'default', title: '', body: '', items: [], startAt: todayStr(), createdAt: new Date().toISOString() }
+    editNote.value = { id: Date.now().toString(), type, color: 'default', title: '', body: '', items: [], createdAt: new Date().toISOString() }
     editClItems.value = []
     isEditing.value = false
     editModalOpen.value = true
@@ -107,7 +91,6 @@ export const useNotesStore = defineStore('notes', () => {
 
   return {
     notes, typePickerOpen, editModalOpen, editNote, editClItems, isEditing,
-    viewMode, showAllTasks,
     load, save, openTypePicker, startNew, openEdit, closeModal,
     saveNote, deleteNote, deleteCurrentNote, toggleItem,
   }

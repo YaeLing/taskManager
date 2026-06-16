@@ -83,6 +83,8 @@
           <div class="done-card-bot">
             <button class="done-btn" @click.stop="restore(t)">↩ 恢復</button>
             <span class="done-btn" style="cursor:pointer" @click.stop="$emit('openDrawer', t.id)">💬 {{ (t.comments || []).length }}</span>
+            <button v-if="weeklyStore.recordIds.has(t.id)" class="done-ppt-tag"
+                    @click.stop="weeklyStore.editRecord(t)" title="查看/編輯週報紀錄">▶ 週報</button>
             <button class="done-del" @click.stop="tasksStore.deleteTask(t.id)">✕</button>
           </div>
         </div>
@@ -97,6 +99,7 @@ import { computed, ref } from 'vue'
 import { useNotesStore, NOTE_MAX, NOTE_COLORS } from '../stores/notes.js'
 import { useTasksStore } from '../stores/tasks.js'
 import { useUserStore }  from '../stores/user.js'
+import { useWeeklyStore } from '../stores/weekly.js'
 import { COLORS } from '../composables/useAvatar.js'
 
 defineEmits(['openDrawer'])
@@ -104,6 +107,7 @@ defineEmits(['openDrawer'])
 const notesStore = useNotesStore()
 const tasksStore = useTasksStore()
 const userStore  = useUserStore()
+const weeklyStore = useWeeklyStore()
 const doneDragOver = ref(false)
 
 function openPicker() {

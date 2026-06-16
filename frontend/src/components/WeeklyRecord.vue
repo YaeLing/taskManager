@@ -33,9 +33,11 @@
               </div>
               <div class="wr-img-list">
                 <div v-for="(img, i) in weeklyStore.wrImages" :key="i" class="wr-img-item">
-                  <img :src="img.url" class="wr-thumb">
-                  <input type="text" v-model="img.caption" placeholder="圖片說明…" class="wr-img-caption">
-                  <button class="wr-img-del" @click="weeklyStore.removeImage(i)">✕</button>
+                  <img :src="img.url" class="wr-img-thumb" @click="openImg(img.url)">
+                  <div class="wr-img-right">
+                    <input type="text" v-model="img.caption" placeholder="這張圖的說明…">
+                  </div>
+                  <button class="wr-img-del" @click="weeklyStore.removeImage(i)" title="移除">✕</button>
                 </div>
               </div>
             </div>
@@ -51,13 +53,26 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useWeeklyStore } from '../stores/weekly.js'
 import { useTasksStore }  from '../stores/tasks.js'
 
 const weeklyStore = useWeeklyStore()
 const tasksStore  = useTasksStore()
 const fileInput   = ref(null)
+
+function onPaste(e) {
+  if (!weeklyStore.recordOpen) return
+  const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items || []
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const f = item.getAsFile()
+      if (f) weeklyStore.addImage(f)
+    }
+  }
+}
+onMounted(()   => document.addEventListener('paste', onPaste))
+onUnmounted(() => document.removeEventListener('paste', onPaste))
 
 function onFileChange(e) {
   Array.from(e.target.files).forEach(f => weeklyStore.addImage(f))
@@ -66,6 +81,7 @@ function onFileChange(e) {
 function onDrop(e) {
   Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')).forEach(f => weeklyStore.addImage(f))
 }
+function openImg(url) { window.open(url, '_blank') }
 
 async function save() {
   const t = tasksStore.tasks.find(t => t.id === weeklyStore.pendingTaskId)

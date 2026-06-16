@@ -101,6 +101,7 @@ onMounted(async () => {
     leavesStore.load(),
     pointsStore.load(),
     notesStore.load(userStore.profile.name),
+    weeklyStore.loadRecords(),
   ])
 
   // SSE

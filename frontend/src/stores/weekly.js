@@ -58,6 +58,12 @@ export const useWeeklyStore = defineStore('weekly', () => {
     recordOpen.value = true
   }
 
+  // Open the record editor for an already-done task (from done card "▶ 週報")
+  function editRecord(task) {
+    pendingTaskId.value = task.id
+    return openRecord(task)
+  }
+
   async function saveRecord(handlers) {
     const images = []
     for (const img of wrImages.value) {
@@ -128,7 +134,7 @@ export const useWeeklyStore = defineStore('weekly', () => {
     confirmOpen, recordOpen, pptOpen, pendingTaskId, recordIds,
     pptConfig, pptTemplateExists, pptRecordCount,
     wrTaskLabel, wrProject, wrNotes, wrImages,
-    loadConfig, loadRecords, showConfirm, skipConfirm, openRecord, saveRecord,
+    loadConfig, loadRecords, showConfirm, skipConfirm, openRecord, editRecord, saveRecord,
     addImage, removeImage, openPPT, savePPTConfig, generatePPT, clearHistory, uploadTemplate,
   }
 })

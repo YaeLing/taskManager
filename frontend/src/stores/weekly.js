@@ -11,6 +11,7 @@ export const useWeeklyStore = defineStore('weekly', () => {
   const pptConfig    = ref({ title: '', presenters: '' })
   const pptTemplateExists = ref(false)
   const pptRecordCount = ref(0)
+  const pptWeeksCount  = ref(0)
 
   // Weekly record editor state
   const wrTaskLabel = ref('')
@@ -25,10 +26,13 @@ export const useWeeklyStore = defineStore('weekly', () => {
     pptTemplateExists.value = tmpl.exists
   }
 
+  // recordIds / counts span every week, so done cards from any week
+  // show the "▶ 週報" button and the PPT modal reflects the full set.
   async function loadRecords() {
-    const data = await API.fetchWeeklyRecords()
-    recordIds.value = new Set((data.records || []).map(r => r.taskId))
-    pptRecordCount.value = (data.records || []).length
+    const all = await API.fetchWeeklyRecordsAll()
+    recordIds.value = new Set((all.records || []).map(r => r.taskId))
+    pptRecordCount.value = all.count || 0
+    pptWeeksCount.value  = (all.weeks || []).length
   }
 
   function showConfirm(taskId) {
@@ -120,8 +124,7 @@ export const useWeeklyStore = defineStore('weekly', () => {
 
   async function clearHistory() {
     const res = await API.clearWeeklyHistory()
-    pptRecordCount.value = 0
-    recordIds.value = new Set()
+    await loadRecords()  // current week survives the clear; recount/refresh ids
     return res
   }
 
@@ -132,7 +135,7 @@ export const useWeeklyStore = defineStore('weekly', () => {
 
   return {
     confirmOpen, recordOpen, pptOpen, pendingTaskId, recordIds,
-    pptConfig, pptTemplateExists, pptRecordCount,
+    pptConfig, pptTemplateExists, pptRecordCount, pptWeeksCount,
     wrTaskLabel, wrProject, wrNotes, wrImages,
     loadConfig, loadRecords, showConfirm, skipConfirm, openRecord, editRecord, saveRecord,
     addImage, removeImage, openPPT, savePPTConfig, generatePPT, clearHistory, uploadTemplate,

@@ -34,7 +34,9 @@
         </div>
       </div>
       <div class="ppt-divider"></div>
-      <div class="ppt-record-count">本週已記錄 {{ weeklyStore.pptRecordCount }} 個任務</div>
+      <div class="ppt-record-count">
+        共 {{ weeklyStore.pptWeeksCount }} 週、已記錄 {{ weeklyStore.pptRecordCount }} 個任務（全部納入週報）
+      </div>
       <div class="ppt-btns">
         <button class="ppt-clear" @click="clearHistory">清除歷史紀錄</button>
         <button class="ppt-generate" @click="weeklyStore.generatePPT()">生成 PPT</button>

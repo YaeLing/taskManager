@@ -143,11 +143,22 @@ def generate_weekly_ppt(config: dict, records: list, template_path: Path = None)
         except Exception:
             pass
 
-    # ── Sort records by handler name ─────────────────────────────
+    # ── Sort records by week, then handler name ──────────────────
     def _key(r):
         h = r.get('handlers', [])
-        return h[0]['name'] if h else '\xff'
+        hn = h[0]['name'] if h else '\xff'
+        return (r.get('week', '') or '\xff', hn)
     records = sorted(records, key=_key)
+
+    def _wk(rec):
+        """'2026-W25' -> 'W25' (short week label for slides/TOC)."""
+        w = rec.get('week', '') or ''
+        return ('W' + w.split('-W')[1]) if '-W' in w else w
+
+    def _toc(rec):
+        w = _wk(rec)
+        t = rec.get('taskText', '')
+        return f'{t}　〔{w}〕' if w else t
 
     presenters = config.get('presenters', '')
     title_text = config.get('title', 'Weekly Report')
@@ -178,6 +189,24 @@ def generate_weekly_ppt(config: dict, records: list, template_path: Path = None)
                 if font_size:
                     run.font.size = Pt(font_size)
 
+        def add_week_badge(slide, rec):
+            w = _wk(rec)
+            if not w:
+                return
+            tb = slide.shapes.add_textbox(Inches(0.8), Inches(6.95), Inches(3), Inches(0.4))
+            p = tb.text_frame.paragraphs[0]
+            run = p.add_run()
+            run.text = w
+            run.font.size = Pt(12)
+            run.font.bold = True
+            run.font.color.rgb = txt_color
+
+        def new_content_slide(rec):
+            slide = prs.slides.add_slide(content_layout)
+            set_ph(slide, rec.get('taskText', ''), PPH.TITLE, PPH.CENTER_TITLE)
+            add_week_badge(slide, rec)
+            return slide
+
         # Cover
         s1 = prs.slides.add_slide(cover_layout)
         set_ph(s1, title_text, PPH.CENTER_TITLE, PPH.TITLE)
@@ -202,31 +231,26 @@ def generate_weekly_ppt(config: dict, records: list, template_path: Path = None)
                 for rec in proj_map[proj]:
                     p = tf.paragraphs[0] if first else tf.add_paragraph()
                     first = False
-                    p.text = rec.get('taskText', '')
+                    p.text = _toc(rec)
                     p.level = 1 if proj else 0
 
         # Content slides
         for rec in records:
-            task_text = rec.get('taskText', '')
             notes = rec.get('notes', '').strip()
             valid_imgs = [img for img in rec.get('images', [])
                           if Path(img.get('path', '')).exists()]
 
             if not valid_imgs:
-                slide = prs.slides.add_slide(content_layout)
-                set_ph(slide, task_text, PPH.TITLE, PPH.CENTER_TITLE)
+                new_content_slide(rec)
                 if notes:
-                    sn = prs.slides.add_slide(content_layout)
-                    set_ph(sn, task_text, PPH.TITLE, PPH.CENTER_TITLE)
+                    sn = new_content_slide(rec)
                     add_desc_text(sn, notes, 1.55, 5.0, font_size=28)
             else:
                 if notes:
-                    sn = prs.slides.add_slide(content_layout)
-                    set_ph(sn, task_text, PPH.TITLE, PPH.CENTER_TITLE)
+                    sn = new_content_slide(rec)
                     add_desc_text(sn, notes, 1.55, 5.0, font_size=28)
                 for i, img in enumerate(valid_imgs):
-                    slide = prs.slides.add_slide(content_layout)
-                    set_ph(slide, task_text, PPH.TITLE, PPH.CENTER_TITLE)
+                    slide = new_content_slide(rec)
                     body = get_body(slide)
                     if body: body.text = ''
 
@@ -249,11 +273,14 @@ def generate_weekly_ppt(config: dict, records: list, template_path: Path = None)
             fill.solid()
             fill.fore_color.rgb = BG
 
-        def make_content(task_text):
+        def make_content(rec):
             slide = prs.slides.add_slide(blank_layout)
             set_bg(slide)
-            add_text_fb(slide, task_text, 0.8, 0.40, 11.73, 0.90, 28, WHITE,
+            add_text_fb(slide, rec.get('taskText', ''), 0.8, 0.40, 11.73, 0.90, 28, WHITE,
                         bold=True, name='Aptos Display')
+            w = _wk(rec)
+            if w:
+                add_text_fb(slide, w, 0.8, 6.9, 3, 0.4, 12, ACCENT, bold=True)
             return slide
 
         s1 = prs.slides.add_slide(blank_layout)
@@ -276,33 +303,32 @@ def generate_weekly_ppt(config: dict, records: list, template_path: Path = None)
             for rec in proj_map[proj]:
                 if y + 0.40 > 6.5: break
                 indent = 1.3 if proj else 0.8
-                add_text_fb(s2, rec.get('taskText', ''), indent, y, 11.73 - (indent - 0.8), 0.40, 14, LIGHT)
+                add_text_fb(s2, _toc(rec), indent, y, 11.73 - (indent - 0.8), 0.40, 14, LIGHT)
                 y += 0.40
         add_text_fb(s2, '1', 12.3, 6.9, 1, 0.4, 11, DIM, align=PP_ALIGN.RIGHT)
 
         slide_num = 2
         for rec in records:
-            task_text = rec.get('taskText', '')
             notes = rec.get('notes', '').strip()
             valid_imgs = [img for img in rec.get('images', [])
                           if Path(img.get('path', '')).exists()]
             if not valid_imgs:
-                slide = make_content(task_text)
+                slide = make_content(rec)
                 add_text_fb(slide, str(slide_num), 12.3, 6.9, 1, 0.4, 11, DIM, align=PP_ALIGN.RIGHT)
                 slide_num += 1
                 if notes:
-                    slide = make_content(task_text)
+                    slide = make_content(rec)
                     add_text_fb(slide, notes, 0.8, 1.55, 11.73, 5.0, 28, LIGHT)
                     add_text_fb(slide, str(slide_num), 12.3, 6.9, 1, 0.4, 11, DIM, align=PP_ALIGN.RIGHT)
                     slide_num += 1
             else:
                 if notes:
-                    slide = make_content(task_text)
+                    slide = make_content(rec)
                     add_text_fb(slide, notes, 0.8, 1.55, 11.73, 5.0, 28, LIGHT)
                     add_text_fb(slide, str(slide_num), 12.3, 6.9, 1, 0.4, 11, DIM, align=PP_ALIGN.RIGHT)
                     slide_num += 1
                 for i, img in enumerate(valid_imgs):
-                    slide = make_content(task_text)
+                    slide = make_content(rec)
                     caption = img.get('caption', '').strip()
                     if caption:
                         add_text_fb(slide, caption, 0.8, 1.47, 11.73, 0.70, 20, LIGHT)

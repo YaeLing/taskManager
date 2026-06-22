@@ -97,12 +97,23 @@ def load_weekly_records(week: str | None = None):
         if rf.exists():
             try:
                 rec = json.loads(rf.read_text(encoding='utf-8'))
+                rec['week'] = week  # authoritative from folder name
                 for img in rec.get('images', []):
                     img['url'] = f'/weekly_data/{week}/{task_dir.name}/{img["filename"]}'
                     img['path'] = str(task_dir / img['filename'])
                 records.append(rec)
             except Exception:
                 pass
+    return records
+
+def load_all_weekly_records():
+    """Every record across all week folders (sorted oldest → newest week)."""
+    if not WEEKLY_DATA_DIR.exists():
+        return []
+    records = []
+    for week_dir in sorted(WEEKLY_DATA_DIR.iterdir()):
+        if week_dir.is_dir():
+            records.extend(load_weekly_records(week_dir.name))
     return records
 
 def save_weekly_record(payload: dict):
@@ -390,18 +401,32 @@ async def get_weekly_records():
     week = get_week_key()
     return {"week": week, "records": load_weekly_records(week)}
 
+@app.get("/api/weekly-records-all")
+async def get_weekly_records_all():
+    records = load_all_weekly_records()
+    weeks = sorted({r.get('week', '') for r in records if r.get('week')})
+    return {"records": records, "weeks": weeks, "count": len(records)}
+
 @app.get("/api/weekly-record")
-async def get_weekly_record(taskId: str = ''):
+async def get_weekly_record(taskId: str = '', week: str = ''):
     if not taskId:
         raise HTTPException(400, 'Missing taskId')
-    week = get_week_key()
-    rf = WEEKLY_DATA_DIR / week / f'task-{taskId}' / 'record.json'
-    if not rf.exists():
-        raise HTTPException(404)
-    rec = json.loads(rf.read_text(encoding='utf-8'))
-    for img in rec.get('images', []):
-        img['url'] = f'/weekly_data/{week}/task-{taskId}/{img["filename"]}'
-    return rec
+    # Look in the given week, else search all weeks (newest first)
+    if week:
+        weeks = [week]
+    elif WEEKLY_DATA_DIR.exists():
+        weeks = [d.name for d in sorted(WEEKLY_DATA_DIR.iterdir(), reverse=True) if d.is_dir()]
+    else:
+        weeks = []
+    for wk in weeks:
+        rf = WEEKLY_DATA_DIR / wk / f'task-{taskId}' / 'record.json'
+        if rf.exists():
+            rec = json.loads(rf.read_text(encoding='utf-8'))
+            rec['week'] = wk
+            for img in rec.get('images', []):
+                img['url'] = f'/weekly_data/{wk}/task-{taskId}/{img["filename"]}'
+            return rec
+    raise HTTPException(404)
 
 @app.post("/api/weekly-record")
 async def post_weekly_record(body: dict[str, Any]):
@@ -410,7 +435,7 @@ async def post_weekly_record(body: dict[str, Any]):
 
 @app.post("/api/generate-ppt")
 async def generate_ppt(body: dict[str, Any]):
-    records = load_weekly_records()
+    records = load_all_weekly_records()
     pptx_bytes = generate_weekly_ppt(body, records, PPT_TEMPLATE_FILE)
     week_num   = get_week_key().split('W')[1]
     month_day  = date.today().strftime('%m%d')

@@ -27,6 +27,7 @@ const API = {
   async fetchWeeklyConfig()    { return (await fetch('/api/weekly-config')).json() },
   async saveWeeklyConfig(data) { return fetch('/api/weekly-config', _post(data)) },
   async fetchWeeklyRecords()   { return (await fetch('/api/weekly-records')).json() },
+  async fetchWeeklyRecordsAll() { return (await fetch('/api/weekly-records-all')).json() },
   async fetchWeeklyRecord(taskId) { return (await fetch(`/api/weekly-record?taskId=${taskId}`)).json() },
   async saveWeeklyRecord(data) { return (await fetch('/api/weekly-record', _post(data))).json() },
   async generatePPT(cfg)       { return fetch('/api/generate-ppt', _post(cfg)) },

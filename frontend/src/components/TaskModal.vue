@@ -28,7 +28,7 @@
           <input type="text" v-model="tagInput" placeholder="輸入或選擇標籤…" autocomplete="off"
                  @keydown.enter.prevent="addTag" @keydown.comma.prevent="addTag"
                  @focus="showSug = true" @blur="setTimeout(() => showSug = false, 150)">
-          <div class="tag-suggestions" v-if="showSug && tagSugs.length">
+          <div class="tag-suggestions" v-if="showSug && tagInput.trim() && tagSugs.length">
             <div v-for="s in tagSugs" :key="s" class="tag-sug-item" @click="selectSug(s)">{{ s }}</div>
           </div>
         </div>
